@@ -1,0 +1,10 @@
+
+with arduino + NeoPixelBus, 
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount);  // works on GPIO3/RXD0
+NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(PixelCount, PixelPin); // also works, GPIO2/D4/
+
+with lua:
+http://nodemcu.readthedocs.io/en/latest/en/modules/ws2812/ => gpio2 only
+
+
+Still can't confirm whether my charger plan will work!
