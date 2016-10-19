@@ -674,6 +674,26 @@ http://www.tycoelectronics.com/catalog/pn/en/1981568-1</description>
 <text x="-9" y="-7.5" size="1.5" layer="52" font="vector">BAT-</text>
 <text x="-2.4" y="9" size="1.5" layer="52" font="vector">USB</text>
 </package>
+<package name="BATT-18650-BLOSSOM-1">
+<description>Blossom Electronics
+&lt;a href="http://www.blossom-ele.com/sdp/1074412/4/pd-5180803/10063890-2439217/18650_Battery_Holder_for_lithium_1X18650_Cell.html"&gt;BH18650-PC2&lt;/a&gt;
+&lt;p&gt;
+PDF datasheets handed out after emailing them
+&lt;p&gt;Height: 21.3mm
+&lt;p&gt;&lt;b&gt;Pins are actually specified as 2.4mmx1.38mm slot, (vertical) not a 2.4mm drill&lt;/b&gt;
+&lt;p&gt;&lt;b&gt;UNPROVEN</description>
+<wire x1="-38.485" y1="10.45" x2="39.215" y2="10.45" width="0.127" layer="21"/>
+<wire x1="39.215" y1="10.45" x2="39.215" y2="-10.45" width="0.127" layer="21"/>
+<wire x1="39.215" y1="-10.45" x2="-38.485" y2="-10.45" width="0.127" layer="21"/>
+<wire x1="-38.485" y1="-10.45" x2="-38.485" y2="10.45" width="0.127" layer="21"/>
+<circle x="-27.805" y="0" radius="1.6" width="0.127" layer="51"/>
+<circle x="27.805" y="0" radius="1.6" width="0.127" layer="51"/>
+<pad name="-" x="-36.45" y="0" drill="2.4"/>
+<pad name="+" x="36.45" y="0" drill="2.4"/>
+<wire x1="23.5" y1="1" x2="23.5" y2="-1" width="0.127" layer="21"/>
+<wire x1="22.5" y1="0" x2="24.5" y2="0" width="0.127" layer="21"/>
+<wire x1="-24.5" y1="0" x2="-22.5" y2="0" width="0.127" layer="21"/>
+</package>
 </packages>
 <symbols>
 <symbol name="WS2812B">
@@ -1236,6 +1256,15 @@ Various standard crystals. Proven footprints. Spark Fun Electronics SKU : COM-00
 <connects>
 <connect gate="1" pin="+" pad="PWR@1 PWR@2 PWR@3"/>
 <connect gate="1" pin="-" pad="GND@1 GND@2 GND@3"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="18650-BLOSSOM" package="BATT-18650-BLOSSOM-1">
+<connects>
+<connect gate="1" pin="+" pad="+"/>
+<connect gate="1" pin="-" pad="-"/>
 </connects>
 <technologies>
 <technology name=""/>
