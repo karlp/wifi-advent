@@ -14473,13 +14473,14 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <part name="U$12" library="microbuilder" deviceset="GND" device=""/>
 <part name="S1" library="SparkFun-Electromechanical" deviceset="SWITCH-MOMENTARY-2" device="PTH" value=""/>
 <part name="S2" library="SparkFun-Electromechanical" deviceset="SWITCH-MOMENTARY-2" device="PTH" value=""/>
-<part name="R2" library="resistor" deviceset="R-EU_" device="R0603" value="10k"/>
-<part name="R3" library="resistor" deviceset="R-EU_" device="R0603" value="10k"/>
+<part name="R31" library="resistor" deviceset="R-EU_" device="R0603" value="470k"/>
+<part name="R32" library="resistor" deviceset="R-EU_" device="R0603" value="100k"/>
 <part name="GND4" library="supply1" deviceset="GND" device=""/>
 <part name="U$14" library="microbuilder" deviceset="VBAT" device=""/>
 <part name="C6" library="rcl" deviceset="CPOL-EU" device="B" value="100uF"/>
 <part name="C7" library="rcl" deviceset="CPOL-EU" device="B" value="100uF"/>
 <part name="U$15" library="microbuilder" deviceset="GND" device=""/>
+<part name="C31" library="microbuilder" deviceset="CAP_CERAMIC" device="_0805" value="100nF"/>
 </parts>
 <sheets>
 <sheet>
@@ -14496,6 +14497,8 @@ Source: http://products.nichicon.co.jp/en/pdf/XJA043/e-ud.pdf</description>
 <text x="213.36" y="147.32" size="1.778" layer="150">Arduino: GPIO2 or GPIO3
 Lua: GPIO2 only.</text>
 <text x="160.02" y="139.7" size="1.778" layer="97">Optional</text>
+<text x="50.8" y="91.44" size="1.778" layer="97">4.2v -&gt; 0.737v
+3.5v -&gt; 0.561v</text>
 </plain>
 <instances>
 <instance part="FRAME1" gate="G$3" x="134.62" y="2.54"/>
@@ -14549,13 +14552,14 @@ Lua: GPIO2 only.</text>
 <instance part="U$12" gate="G$1" x="200.66" y="139.7"/>
 <instance part="S1" gate="G$1" x="96.52" y="55.88" rot="R90"/>
 <instance part="S2" gate="G$1" x="119.38" y="55.88" rot="R90"/>
-<instance part="R2" gate="G$1" x="40.64" y="88.9" rot="R90"/>
-<instance part="R3" gate="G$1" x="40.64" y="78.74" rot="R90"/>
+<instance part="R31" gate="G$1" x="40.64" y="88.9" rot="R90"/>
+<instance part="R32" gate="G$1" x="40.64" y="78.74" rot="R90"/>
 <instance part="GND4" gate="1" x="40.64" y="71.12"/>
 <instance part="U$14" gate="G$1" x="40.64" y="96.52"/>
 <instance part="C6" gate="G$1" x="147.32" y="149.86"/>
 <instance part="C7" gate="G$1" x="162.56" y="149.86"/>
 <instance part="U$15" gate="G$1" x="154.94" y="134.62"/>
+<instance part="C31" gate="G$1" x="53.34" y="78.74"/>
 </instances>
 <busses>
 </busses>
@@ -14656,8 +14660,23 @@ Lua: GPIO2 only.</text>
 <wire x1="200.66" y1="147.32" x2="200.66" y2="142.24" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="R3" gate="G$1" pin="1"/>
+<pinref part="R32" gate="G$1" pin="1"/>
 <pinref part="GND4" gate="1" pin="GND"/>
+<pinref part="C31" gate="G$1" pin="2"/>
+<wire x1="53.34" y1="76.2" x2="53.34" y2="73.66" width="0.1524" layer="91"/>
+<wire x1="53.34" y1="73.66" x2="40.64" y2="73.66" width="0.1524" layer="91"/>
+<junction x="40.64" y="73.66"/>
+</segment>
+<segment>
+<pinref part="C6" gate="G$1" pin="-"/>
+<pinref part="U$15" gate="G$1" pin="GND"/>
+<wire x1="147.32" y1="144.78" x2="147.32" y2="142.24" width="0.1524" layer="91"/>
+<wire x1="147.32" y1="142.24" x2="154.94" y2="142.24" width="0.1524" layer="91"/>
+<wire x1="154.94" y1="142.24" x2="154.94" y2="137.16" width="0.1524" layer="91"/>
+<pinref part="C7" gate="G$1" pin="-"/>
+<wire x1="162.56" y1="144.78" x2="162.56" y2="142.24" width="0.1524" layer="91"/>
+<wire x1="162.56" y1="142.24" x2="154.94" y2="142.24" width="0.1524" layer="91"/>
+<junction x="154.94" y="142.24"/>
 </segment>
 <segment>
 <pinref part="C6" gate="G$1" pin="-"/>
@@ -14749,7 +14768,7 @@ Lua: GPIO2 only.</text>
 <pinref part="X1" gate="1" pin="+"/>
 </segment>
 <segment>
-<pinref part="R2" gate="G$1" pin="2"/>
+<pinref part="R31" gate="G$1" pin="2"/>
 <pinref part="U$14" gate="G$1" pin="VBAT"/>
 </segment>
 </net>
@@ -14919,11 +14938,12 @@ Lua: GPIO2 only.</text>
 </net>
 <net name="BAT_MON" class="0">
 <segment>
-<pinref part="R2" gate="G$1" pin="1"/>
-<pinref part="R3" gate="G$1" pin="2"/>
+<pinref part="R31" gate="G$1" pin="1"/>
+<pinref part="R32" gate="G$1" pin="2"/>
 <wire x1="40.64" y1="83.82" x2="53.34" y2="83.82" width="0.1524" layer="91"/>
 <junction x="40.64" y="83.82"/>
 <label x="48.26" y="83.82" size="1.778" layer="95"/>
+<pinref part="C31" gate="G$1" pin="1"/>
 </segment>
 <segment>
 <pinref part="X2" gate="G$1" pin="ADC"/>
