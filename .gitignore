@@ -1,0 +1,6 @@
+# Eagle auto backup files.
+*.b#?
+*.s#?
+*.l#?
+.*.sch.lck
+.*.brd.lck
