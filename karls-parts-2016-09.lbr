@@ -656,23 +656,26 @@ http://www.tycoelectronics.com/catalog/pn/en/1981568-1</description>
 <wire x1="30.765" y1="-5.5526" x2="21.23" y2="-5.5526" width="0.2032" layer="21"/>
 </package>
 <package name="MOD-LIPO_CHARGER">
+<description>Suits cheap charger modules like &lt;a href="http://www.ebay.com/itm/142004893160"&gt;http://www.ebay.com/itm/142004893160&lt;/a&gt; based on TP4056
+&lt;p&gt;
+&lt;b&gt;UNPROVEN&lt;/b&gt;</description>
 <wire x1="-10" y1="13" x2="9" y2="13" width="0.127" layer="21"/>
-<wire x1="9" y1="13" x2="9" y2="-12" width="0.127" layer="51"/>
+<wire x1="9" y1="13" x2="9" y2="-12" width="0.127" layer="21"/>
 <wire x1="9" y1="-12" x2="-10" y2="-12" width="0.127" layer="21"/>
 <wire x1="-10" y1="-12" x2="-10" y2="13" width="0.127" layer="21"/>
-<wire x1="-4" y1="13" x2="-4" y2="4" width="0.127" layer="52"/>
-<wire x1="-4" y1="4" x2="3" y2="4" width="0.127" layer="52"/>
-<wire x1="3" y1="4" x2="3" y2="13" width="0.127" layer="52"/>
+<wire x1="-4" y1="13" x2="-4" y2="4" width="0.127" layer="51"/>
+<wire x1="-4" y1="4" x2="3" y2="4" width="0.127" layer="51"/>
+<wire x1="3" y1="4" x2="3" y2="13" width="0.127" layer="51"/>
 <pad name="BAT+" x="7" y="-10" drill="1.5" diameter="3.81" shape="square"/>
 <pad name="BAT-" x="-8" y="-10" drill="1.5" diameter="3.81" shape="square"/>
 <pad name="IN+" x="7" y="11" drill="1.5" diameter="3.81" shape="square"/>
 <pad name="IN-" x="-8" y="11" drill="1.5" diameter="3.81" shape="square"/>
-<text x="-8" y="1" size="1.5" layer="52" font="vector">Lipo Charger</text>
-<text x="5" y="7" size="1.5" layer="52" font="vector">IN+</text>
-<text x="-9" y="7" size="1.5" layer="52" font="vector">IN-</text>
-<text x="3" y="-7.5" size="1.5" layer="27" font="vector">BAT+</text>
-<text x="-9" y="-7.5" size="1.5" layer="52" font="vector">BAT-</text>
-<text x="-2.4" y="9" size="1.5" layer="52" font="vector">USB</text>
+<text x="-8" y="1" size="1.5" layer="27" font="vector">Lipo Charger</text>
+<text x="5" y="7" size="1.5" layer="51" font="vector">IN+</text>
+<text x="-9" y="7" size="1.5" layer="51" font="vector">IN-</text>
+<text x="3" y="-7.5" size="1.5" layer="51" font="vector">BAT+</text>
+<text x="-9" y="-7.5" size="1.5" layer="51" font="vector">BAT-</text>
+<text x="-2.4" y="9" size="1.5" layer="51" font="vector">USB</text>
 </package>
 <package name="BATT-18650-BLOSSOM-1">
 <description>Blossom Electronics
