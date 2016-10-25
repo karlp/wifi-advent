@@ -3057,6 +3057,14 @@ design rules under a new name.</description>
 <wire x1="24.89" y1="3.89" x2="23.3" y2="2.3" width="1.016" layer="16"/>
 <wire x1="23.3" y1="2.3" x2="22.7" y2="1.7" width="0.8128" layer="1"/>
 <wire x1="22.7" y1="1.7" x2="17.15" y2="1.7" width="0.8128" layer="1"/>
+<polygon width="0.8128" layer="1">
+<vertex x="21.4" y="13.2"/>
+<vertex x="27.7" y="13.2"/>
+<vertex x="27.7" y="0.9"/>
+<vertex x="18.3" y="0.9"/>
+<vertex x="18.3" y="6.4"/>
+<vertex x="21.4" y="6.4"/>
+</polygon>
 </signal>
 <signal name="3.3V">
 <contactref element="X2" pad="8"/>
