@@ -14821,10 +14821,10 @@ never cut. no need.</text>
 <instance part="U$2" gate="G$1" x="22.86" y="25.4" rot="R90"/>
 <instance part="GND3" gate="1" x="60.96" y="17.78"/>
 <instance part="U$4" gate="G$1" x="10.16" y="55.88"/>
-<instance part="U$5" gate="G$1" x="101.6" y="76.2"/>
+<instance part="U$5" gate="G$1" x="104.14" y="83.82"/>
 <instance part="GND2" gate="1" x="76.2" y="12.7"/>
 <instance part="U$8" gate="G$1" x="81.28" y="53.34"/>
-<instance part="GND6" gate="1" x="101.6" y="38.1"/>
+<instance part="GND6" gate="1" x="104.14" y="45.72"/>
 <instance part="U$10" gate="G$1" x="134.62" y="129.54"/>
 <instance part="U$11" gate="G$1" x="12.7" y="129.54"/>
 <instance part="U$1" gate="G$1" x="238.76" y="45.72"/>
@@ -14835,7 +14835,7 @@ never cut. no need.</text>
 <instance part="R11" gate="G$1" x="10.16" y="45.72" rot="R90"/>
 <instance part="R13" gate="G$1" x="81.28" y="38.1" rot="R90"/>
 <instance part="R12" gate="G$1" x="76.2" y="22.86" rot="R90"/>
-<instance part="R15" gate="G$1" x="101.6" y="68.58" rot="R90"/>
+<instance part="R15" gate="G$1" x="104.14" y="76.2" rot="R90"/>
 <instance part="U$9" gate="G$1" x="116.84" y="83.82"/>
 <instance part="GND1" gate="1" x="116.84" y="45.72"/>
 <instance part="R14" gate="G$1" x="116.84" y="76.2" rot="R90"/>
@@ -14850,7 +14850,7 @@ never cut. no need.</text>
 <instance part="LEFT" gate="G$1" x="193.04" y="152.4" rot="MR180"/>
 <instance part="RIGHT" gate="G$1" x="195.58" y="73.66" rot="MR180"/>
 <instance part="U$12" gate="G$1" x="200.66" y="139.7"/>
-<instance part="S1" gate="G$1" x="101.6" y="48.26" rot="R90"/>
+<instance part="S1" gate="G$1" x="104.14" y="55.88" rot="R90"/>
 <instance part="S2" gate="G$1" x="116.84" y="55.88" rot="R90"/>
 <instance part="R31" gate="G$1" x="33.02" y="88.9" rot="R90"/>
 <instance part="R32" gate="G$1" x="33.02" y="78.74" rot="R90"/>
@@ -14908,7 +14908,7 @@ never cut. no need.</text>
 </segment>
 <segment>
 <pinref part="GND6" gate="1" pin="GND"/>
-<wire x1="101.6" y1="43.18" x2="101.6" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="104.14" y1="50.8" x2="104.14" y2="48.26" width="0.1524" layer="91"/>
 <pinref part="S1" gate="G$1" pin="1"/>
 </segment>
 <segment>
@@ -15090,8 +15090,8 @@ never cut. no need.</text>
 <label x="15.24" y="43.18" size="1.778" layer="95"/>
 </segment>
 <segment>
-<wire x1="101.6" y1="63.5" x2="101.6" y2="53.34" width="0.1524" layer="91"/>
-<label x="104.14" y="55.88" size="1.778" layer="95" rot="R90"/>
+<wire x1="104.14" y1="71.12" x2="104.14" y2="60.96" width="0.1524" layer="91"/>
+<label x="106.68" y="63.5" size="1.778" layer="95" rot="R90"/>
 <pinref part="R15" gate="G$1" pin="1"/>
 <pinref part="S1" gate="G$1" pin="2"/>
 </segment>
