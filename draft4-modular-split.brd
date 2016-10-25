@@ -156,9 +156,6 @@
 </layers>
 <board>
 <plain>
-<wire x1="0" y1="13.97" x2="0.508" y2="13.462" width="0" layer="20"/>
-<wire x1="0.508" y1="13.462" x2="0.508" y2="9.398" width="0" layer="20"/>
-<wire x1="0.508" y1="9.398" x2="0" y2="8.89" width="0" layer="20"/>
 <wire x1="0" y1="8.89" x2="0" y2="2.54" width="0" layer="20"/>
 <wire x1="0" y1="0" x2="100" y2="0" width="0.1" layer="20"/>
 <wire x1="100" y1="0" x2="100" y2="73" width="0.1" layer="20"/>
