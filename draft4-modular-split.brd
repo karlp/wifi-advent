@@ -189,6 +189,8 @@ G</text>
 <vertex x="53" y="44"/>
 <vertex x="53" y="43.9"/>
 </polygon>
+<text x="75.8" y="22.1" size="0.8128" layer="21" ratio="18">Karl Palsson   http://false.ekta.is
+WiFi Advent rev 1 (2016)</text>
 </plain>
 <libraries>
 <library name="microbuilder">
