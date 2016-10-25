@@ -14798,6 +14798,8 @@ less than 770mOhms
 . IRLML6401</text>
 <text x="50.8" y="119.38" size="1.778" layer="97">Solder to use Schottkey.
 never cut. no need.</text>
+<text x="243.84" y="33.02" size="1.778" layer="97">SUCK TO MY LIBRARY AND FIX</text>
+<text x="223.52" y="15.24" size="1.778" layer="97">SUCK TO MY LIBRARY AND FIX</text>
 </plain>
 <instances>
 <instance part="FRAME1" gate="G$3" x="134.62" y="2.54"/>
