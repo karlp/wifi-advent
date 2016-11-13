@@ -12,3 +12,17 @@ tmr.alarm(0, 200, 1, function()
 	buf:shift(1, ws2812.SHIFT_CIRCULAR)
 end)
 
+
+wifi.setmode(wifi.SOFTAP)
+function es_ok()
+	print(string.format("Connected to wifi ssid: %s our IP: %s", wifi.sta.getconfig(), wifi.sta.getip()))
+end
+function es_bad(err, str)
+	print("es failed, err: ", err, " str: ", str)
+end
+function es_dbg(str)
+	print("es dbg: ", str)
+end
+enduser_setup.start(es_ok, es_bad, es_dbg)
+enduser_setup.start(es_ok, es_bad)
+enduser_setup.stop()
