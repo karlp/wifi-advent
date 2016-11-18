@@ -2,6 +2,8 @@
 // Nov 2016
 // Gross basic start at OTA+leds.
 // missing: AP end user setup!
+#include <FS.h>
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -9,6 +11,7 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <NeoPixelBus.h>
 #include <NeoPixelAnimator.h>
+#include <WiFiManager.h>
 
 const uint16_t PixelCount = 7;
 const uint8_t PixelPin = 2; // make sure to set this to the correct pin, ignored for Esp8266
@@ -20,8 +23,10 @@ NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(PixelCount, PixelP
 NeoPixelAnimator animations(AnimationChannels); // NeoPixel animation management object
 
 uint16_t effectState = 0; // general purpose variable used to store effect state
-const char* ssid = "...";
-const char *password = "...";
+
+char mqtt_host[60] = "...";
+char mqtt_port[6] = "1883";
+
 const char *host = "advent";
 const char* update_path = "/firmware";
 const char* update_username = "...";
@@ -109,7 +114,8 @@ void FadeInFadeOutRinseRepeat(float luminance)
 
         animations.StartAnimation(0, time, BlendAnimUpdate);
     } else if (effectState == 2) {
-        Serial.println("effect 2");
+        int batt = analogRead(A0);
+        Serial.printf("'Battery' adc = %d\n", batt);
         // Pick a random colour, and a few versions of it...
         RgbColor col = HslColor(random(360) / 360.0f, 1.0f, luminance);
         strip.ClearTo(RgbColor(0));
@@ -122,7 +128,7 @@ void FadeInFadeOutRinseRepeat(float luminance)
     effectState = (effectState + 1) % 3;
 }
 
-void WiFiEvent(WiFiEvent_t event)
+void cbWiFiEvent(WiFiEvent_t event)
 {
     Serial.printf("[WiFi-event] event: %d\n", event);
 
@@ -223,7 +229,7 @@ void ota_onEnd()
 
 void ota_onError(int i)
 {
-    Serial.println("OTA Failed?"); // FIXME - decode error!
+    Serial.println(">>>OTA Failed?"); // FIXME - decode error!
     for (int i = 0; i < 10; i++) {
         strip.ClearTo(RgbColor(40, 0, 0));
         delay(25);
@@ -239,6 +245,170 @@ void ota_onProgress(unsigned int i, unsigned int j)
     strip.RotateRight(1);
 }
 
+/**
+ * Entered on failed wifi conn or no config
+ */
+void handle_config_enter(WiFiManager *myWiFiManager)
+{
+    // BLink leds green?
+    Serial.println("Failed to connect, or no settings");
+    Serial.println(WiFi.softAPIP());
+    Serial.println(myWiFiManager->getConfigPortalSSID());
+}
+
+bool shouldSaveConfig;
+
+void handle_config_save(void)
+{
+    Serial.println("Should save config");
+    shouldSaveConfig = true;
+}
+
+/// FIXME - make this use nice objects instead of global chars!
+
+int load_config()
+{
+    if (!SPIFFS.exists("/config.json")) {
+        return -1;
+    }
+    //file exists, reading and loading
+    Serial.println("reading config file");
+    File configFile = SPIFFS.open("/config.json", "r");
+    if (!configFile) {
+        return -2;
+    }
+    size_t size = configFile.size();
+    Serial.printf("opened config file of size: %d\n", size);
+    // Allocate a buffer to store contents of the file.
+    std::unique_ptr<char[] > buf(new char[size]);
+
+    configFile.readBytes(buf.get(), size);
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.parseObject(buf.get());
+    json.printTo(Serial);
+    if (json.success()) {
+        Serial.println("\nparsed json");
+        if (json.containsKey("mqtt_server")) {
+            // fallback
+            strcpy(mqtt_host, json["mqtt_server"]);
+        }
+        if (json.containsKey("mqtt_host")) {
+            strcpy(mqtt_host, json["mqtt_host"]);
+        }
+        if (json.containsKey("mqtt_port")) {
+            strcpy(mqtt_port, json["mqtt_port"]);
+        }
+    } else {
+        Serial.println("failed to load json config");
+        return -3;
+    }
+    return 0;
+}
+
+int save_config()
+{
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["mqtt_host"] = mqtt_host;
+    json["mqtt_port"] = mqtt_port;
+
+    File configFile = SPIFFS.open("/config.json", "w");
+    if (!configFile) {
+        Serial.println("failed to open config file for writing");
+        return -1;
+    }
+
+    json.printTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+    return 0;
+}
+
+void setup_eus()
+{
+    // FIXME - create from dumb hash of the serial
+
+    if (SPIFFS.begin()) {
+        Serial.println("mounted file system");
+        load_config();
+    } else {
+        Serial.println("failed to mount FS");
+    }
+    yield();
+
+
+    WiFi.onEvent(cbWiFiEvent);
+    WiFiManager wifiManager;
+
+    wifiManager.setDebugOutput(true);
+    wifiManager.setSaveConfigCallback(handle_config_save);
+    wifiManager.setAPCallback(handle_config_enter);
+    wifiManager.setConfigPortalTimeout(240);
+
+    // The extra parameters to be configured (can be either global or just in the setup)
+    // After connecting, parameter.getValue() will get you the configured value
+    // id/name placeholder/prompt default length
+    WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
+    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
+
+    wifiManager.addParameter(&custom_mqtt_server);
+    wifiManager.addParameter(&custom_mqtt_port);
+    
+    // Only for testing, throws out everything
+    //wifiManager.resetSettings();
+
+    int id = ESP.getChipId();
+    String ssid = String("advent-" + String(id, HEX));
+    // FIXME - make this use a random seed to generate and save to config?
+    String key = "simple1234";
+
+    //bool up = wifiManager.autoConnect();    
+    bool up = wifiManager.autoConnect(ssid.c_str(), key.c_str());
+    Serial.print("wifi auto con returned: ");
+    Serial.println(up);
+
+    if (shouldSaveConfig) {
+        shouldSaveConfig = false;
+        Serial.println("Reached loop, need to save config!");
+        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
+        strcpy(mqtt_host, custom_mqtt_server.getValue());
+        strcpy(mqtt_port, custom_mqtt_port.getValue());
+        save_config();
+    }
+
+    if (!up) {
+        // FIXME - restarting here means we _require_ a wifi uplink before you can even try updating firmware.
+        // We probably want a way of offering firmware updates even without.  Perhaps
+        // via a config option manager?
+        Serial.println("Failed to connect, falling back to existing code?");
+        return;
+    }
+
+    // delete old config
+    //    WiFi.disconnect(true);
+    //
+    //    delay(100);
+
+
+    // quick scan on boot to help check what's going on....
+    //    wifi_scan();
+    //    delay(100);
+    //    // delete old config
+    //    WiFi.disconnect(true);
+    //
+    //    delay(100);
+
+    //    WiFi.mode(WIFI_STA);
+    //    WiFi.begin(ssid, password);
+
+    //
+    //    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    //        WiFi.begin(ssid, password);
+    //        Serial.println("WiFi failed, retrying.");
+    //    }
+
+}
+
 void setup_ota()
 {
 
@@ -246,28 +416,6 @@ void setup_ota()
     httpUpdater.onEnd(ota_onEnd);
     httpUpdater.onError(ota_onError);
     httpUpdater.onProgress(ota_onProgress);
-    // delete old config
-    WiFi.disconnect(true);
-
-    delay(100);
-
-    WiFi.onEvent(WiFiEvent);
-
-    // quick scan on boot to help check what's going on....
-    wifi_scan();
-    delay(100);
-    // delete old config
-    WiFi.disconnect(true);
-
-    delay(100);
-
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-
-    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        WiFi.begin(ssid, password);
-        Serial.println("WiFi failed, retrying.");
-    }
 
     MDNS.begin(host);
 
@@ -278,8 +426,6 @@ void setup_ota()
     Serial.printf("HTTPUpdateServer ready! Open http://%s.local%s in your browser and login with username '%s' and password '%s'\n", host, update_path, update_username, update_password);
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
-
-
 }
 
 void setup()
@@ -288,11 +434,18 @@ void setup()
     Serial.println();
     Serial.println("Booting Sketch...");
     setup_dump_flashinfo();
+    Serial.print("Reset reason and info: ");
+    Serial.println(ESP.getResetReason());
+    Serial.println(ESP.getResetInfo());
+
     strip.Begin();
     strip.Show();
 
     SetRandomSeed();
+    setup_eus();
     setup_ota();
+    int batt = analogRead(A0);
+    Serial.printf("'Battery' adc = %d\n", batt);
 }
 
 void loop()
@@ -308,6 +461,4 @@ void loop()
         FadeInFadeOutRinseRepeat(0.15f); // 0.0 = black, 0.25 is normal, 0.5 is bright
     }
 }
-
-
 
