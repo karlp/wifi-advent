@@ -12,6 +12,7 @@
 #include <NeoPixelBus.h>
 #include <NeoPixelAnimator.h>
 #include <WiFiManager.h>
+#include <AsyncMqttClient.h>
 
 const uint16_t PixelCount = 4;
 const uint8_t PixelPin = 2; // make sure to set this to the correct pin, ignored for Esp8266
@@ -35,6 +36,8 @@ const char* update_password = "...";
 ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater(true);
 
+AsyncMqttClient mqttClient;
+int mqttTicker;
 
 // what is stored for state is specific to the need, in this case, the colors.
 // basically what ever you need inside the animation update function
@@ -116,6 +119,8 @@ void FadeInFadeOutRinseRepeat(float luminance)
     } else if (effectState == 2) {
         int batt = analogRead(A0);
         Serial.printf("'Battery' adc = %d\n", batt);
+        mqttClient.publish("advent/aaa/s/batt", 0, false, String(batt).c_str());
+        mqttClient.publish("advent/aaa/s/tick", 0, false, String(mqttTicker++).c_str());
         // Pick a random colour, and a few versions of it...
         RgbColor col = HslColor(random(360) / 360.0f, 1.0f, luminance);
         strip.ClearTo(RgbColor(0));
@@ -213,7 +218,10 @@ void ota_onStart()
 {
     Serial.println("Starting Update");
     strip.ClearTo(RgbColor(0));
-    strip.SetPixelColor(0, RgbColor(0, 0, 127));
+    strip.SetPixelColor(0, RgbColor(0, 0, 30));
+    strip.SetPixelColor(1, RgbColor(0, 0, 60));
+    strip.SetPixelColor(2, RgbColor(0, 0, 120));
+    strip.SetPixelColor(3, RgbColor(0, 0, 60));
 }
 
 void ota_onEnd()
@@ -221,8 +229,10 @@ void ota_onEnd()
     Serial.println("Update Finished!");
     for (int i = 0; i < 10; i++) {
         strip.ClearTo(RgbColor(0, 40, 0));
-        delay(25);
+        strip.Show();
+        delay(50);
         strip.ClearTo(RgbColor(0));
+        strip.Show();
         delay(25);
     }
 }
@@ -232,8 +242,10 @@ void ota_onError(int i)
     Serial.println(">>>OTA Failed?"); // FIXME - decode error!
     for (int i = 0; i < 10; i++) {
         strip.ClearTo(RgbColor(40, 0, 0));
+        strip.Show();
         delay(25);
         strip.ClearTo(RgbColor(0));
+        strip.Show();
         delay(25);
     }
     ESP.restart();
@@ -243,6 +255,7 @@ void ota_onProgress(unsigned int i, unsigned int j)
 {
     Serial.printf("OTA Progress: %d/%d\n", i, j);
     strip.RotateRight(1);
+    strip.Show();
 }
 
 /**
@@ -324,6 +337,43 @@ int save_config()
     return 0;
 }
 
+void onMqttConnect(bool sessionPresent)
+{
+    Serial.printf("MQTT: connected: %d\n", sessionPresent);
+    uint16_t packetIdSub = mqttClient.subscribe("advent/aaa/c", 0);
+    mqttClient.publish("advent/aaa/w", 0, false, "ON");
+}
+
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
+{
+    // FIXME - get a useful handler abstraction for blinking leds for status
+    Serial.printf("MQTT: disconn: %d\n", reason);
+    for (int i = 0; i < 5; i++) {
+        strip.SetPixelColor(0, RgbColor(40, 0, 0));
+        strip.Show();
+        delay(50);
+        strip.SetPixelColor(0, RgbColor(10, 0, 0));
+        strip.Show();
+        delay(40);
+    }
+    mqttClient.connect();
+}
+
+void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
+{
+    Serial.printf("MQTT: got msg on topic: %s\n", topic);
+    // TODO - decode json, either treat as raw set commands, or mode switches to saved patterns
+    // or commands like "add allowing this unit to communicate me and all that good jazz
+    for (int i = 0; i < 5; i++) {
+        strip.SetPixelColor(1, RgbColor(40, 40, 0));
+        strip.Show();
+        delay(40);
+        strip.SetPixelColor(0, RgbColor(0, 40, 40));
+        strip.Show();
+        delay(40);
+    }
+}
+
 void setup_eus()
 {
     // FIXME - create from dumb hash of the serial
@@ -353,7 +403,7 @@ void setup_eus()
 
     wifiManager.addParameter(&custom_mqtt_server);
     wifiManager.addParameter(&custom_mqtt_port);
-    
+
     // Only for testing, throws out everything
     //wifiManager.resetSettings();
 
@@ -428,24 +478,37 @@ void setup_ota()
     Serial.println(WiFi.localIP());
 }
 
+void setup_mqtt()
+{
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+    mqttClient.onMessage(onMqttMessage);
+    mqttClient.setServer(mqtt_host, String(mqtt_port).toInt());
+    mqttClient.setKeepAlive(60).setCleanSession(false);
+    mqttClient.setWill("advent/aaa/w", 0, true, "OFF");
+    Serial.println("Connecting to MQTT...");
+    mqttClient.connect();
+}
+
 void setup()
 {
     Serial.begin(115200);
-    Serial.println();
     Serial.println("Booting Sketch...");
+    strip.Begin();
+    strip.Show();
+    strip.SetPixelColor(0, RgbColor(0, 40, 0));
     setup_dump_flashinfo();
     Serial.print("Reset reason and info: ");
     Serial.println(ESP.getResetReason());
     Serial.println(ESP.getResetInfo());
-
-    strip.Begin();
-    strip.Show();
 
     SetRandomSeed();
     setup_eus();
     setup_ota();
     int batt = analogRead(A0);
     Serial.printf("'Battery' adc = %d\n", batt);
+
+    setup_mqtt();
 }
 
 void loop()
