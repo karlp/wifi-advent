@@ -13,7 +13,7 @@
 #include <NeoPixelAnimator.h>
 #include <WiFiManager.h>
 
-const uint16_t PixelCount = 7;
+const uint16_t PixelCount = 4;
 const uint8_t PixelPin = 2; // make sure to set this to the correct pin, ignored for Esp8266
 const uint8_t AnimationChannels = 1; // we only need one as all the pixels are animated at once
 
