@@ -696,6 +696,24 @@ PDF datasheets handed out after emailing them
 <wire x1="22.5" y1="0" x2="24.5" y2="0" width="0.127" layer="21"/>
 <wire x1="-24.5" y1="0" x2="-22.5" y2="0" width="0.127" layer="21"/>
 </package>
+<package name="PAD.02X.02">
+<smd name="P$1" x="0" y="0" dx="0.508" dy="0.508" layer="1"/>
+</package>
+<package name="PAD.03X.03">
+<smd name="P$1" x="0" y="0" dx="0.762" dy="0.762" layer="1" roundness="100" cream="no"/>
+</package>
+<package name="PAD.03X.05">
+<smd name="P$1" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+</package>
+<package name="PAD.03X.04">
+<smd name="P$1" x="0" y="0" dx="1.016" dy="1.016" layer="1" roundness="100" cream="no"/>
+</package>
+<package name="TP_06TH">
+<description>0.6mm drill test point
+&lt;p&gt;Big enough to stick a strand of cat5 wire into :)</description>
+<pad name="P$1" x="0" y="0" drill="0.6" stop="no"/>
+<circle x="0" y="0" radius="0.381" width="0" layer="30"/>
+</package>
 </packages>
 <symbols>
 <symbol name="WS2812B">
@@ -976,6 +994,13 @@ Originally from microbuilder?</description>
 <wire x1="-3.948" y1="-0.124" x2="-3.748" y2="-0.324" width="0.254" layer="94"/>
 <wire x1="-3.748" y1="-0.324" x2="-3.748" y2="0.476" width="0.254" layer="94"/>
 <wire x1="-3.748" y1="0.476" x2="-4.148" y2="0.076" width="0.254" layer="94"/>
+</symbol>
+<symbol name="TEST-POINT">
+<wire x1="2.54" y1="0" x2="0" y2="0" width="0.1524" layer="94"/>
+<wire x1="3.302" y1="0.762" x2="3.302" y2="-0.762" width="0.1524" layer="94" curve="180"/>
+<text x="-2.54" y="2.54" size="1.778" layer="95">&gt;Name</text>
+<text x="-2.54" y="-2.54" size="1.778" layer="96">&gt;Value</text>
+<pin name="1" x="0" y="0" visible="off" length="point" rot="R180"/>
 </symbol>
 </symbols>
 <devicesets>
@@ -1286,6 +1311,54 @@ Various standard crystals. Proven footprints. Spark Fun Electronics SKU : COM-00
 <connect gate="G$1" pin="BAT-" pad="BAT-"/>
 <connect gate="G$1" pin="IN+" pad="IN+"/>
 <connect gate="G$1" pin="IN-" pad="IN-"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="TEST-POINT" prefix="TP">
+<description>Bare copper test points for troubleshooting or ICT</description>
+<gates>
+<gate name="G$1" symbol="TEST-POINT" x="0" y="0"/>
+</gates>
+<devices>
+<device name="2" package="PAD.02X.02">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="3" package="PAD.03X.03">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="3X5" package="PAD.03X.05">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="3X4" package="PAD.03X.04">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="TP_06_TH" package="TP_06TH">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
 </connects>
 <technologies>
 <technology name=""/>
