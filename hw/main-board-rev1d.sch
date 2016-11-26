@@ -2027,16 +2027,15 @@ source: http://www.world-semi.com/uploads/soft/130904/1_1500205981.pdf</descript
 &lt;p&gt;
 PDF datasheets handed out after emailing them
 &lt;p&gt;Height: 21.3mm
-&lt;p&gt;&lt;b&gt;Pins are actually specified as 2.4mmx1.38mm slot, (vertical) not a 2.4mm drill&lt;/b&gt;
-&lt;p&gt;&lt;b&gt;UNPROVEN</description>
+&lt;p&gt;&lt;b&gt;Recommended PCB layout is 2.4mmx1.38mm slot, (vertical) That is far bigger than necessary with example hardware.  2.0mm is plenty&lt;/b&gt;</description>
 <wire x1="-38.485" y1="10.45" x2="39.215" y2="10.45" width="0.127" layer="21"/>
 <wire x1="39.215" y1="10.45" x2="39.215" y2="-10.45" width="0.127" layer="21"/>
 <wire x1="39.215" y1="-10.45" x2="-38.485" y2="-10.45" width="0.127" layer="21"/>
 <wire x1="-38.485" y1="-10.45" x2="-38.485" y2="10.45" width="0.127" layer="21"/>
 <circle x="-27.805" y="0" radius="1.6" width="0.127" layer="51"/>
 <circle x="27.805" y="0" radius="1.6" width="0.127" layer="51"/>
-<pad name="-" x="-36.45" y="0" drill="2.4"/>
-<pad name="+" x="36.45" y="0" drill="2.4"/>
+<pad name="-" x="-36.45" y="0" drill="2"/>
+<pad name="+" x="36.45" y="0" drill="2"/>
 <wire x1="23.5" y1="1" x2="23.5" y2="-1" width="0.127" layer="21"/>
 <wire x1="22.5" y1="0" x2="24.5" y2="0" width="0.127" layer="21"/>
 <wire x1="-24.5" y1="0" x2="-22.5" y2="0" width="0.127" layer="21"/>
@@ -2044,7 +2043,7 @@ PDF datasheets handed out after emailing them
 <package name="MOD-LIPO_CHARGER">
 <description>Suits cheap charger modules like &lt;a href="http://www.ebay.com/itm/142004893160"&gt;http://www.ebay.com/itm/142004893160&lt;/a&gt; based on TP4056
 &lt;p&gt;
-&lt;b&gt;UNPROVEN&lt;/b&gt;</description>
+Original _worked_ but needed skewed pins. Reduced pads to 3.4mm matching the ones I bought, expanded drills to 1.8mm.  Samples received had 1.7mm finished hole size.</description>
 <wire x1="-10" y1="13" x2="9" y2="13" width="0.127" layer="21"/>
 <wire x1="9" y1="13" x2="9" y2="-12" width="0.127" layer="21"/>
 <wire x1="9" y1="-12" x2="-10" y2="-12" width="0.127" layer="21"/>
@@ -2052,10 +2051,10 @@ PDF datasheets handed out after emailing them
 <wire x1="-4" y1="13" x2="-4" y2="4" width="0.127" layer="51"/>
 <wire x1="-4" y1="4" x2="3" y2="4" width="0.127" layer="51"/>
 <wire x1="3" y1="4" x2="3" y2="13" width="0.127" layer="51"/>
-<pad name="BAT+" x="7" y="-10" drill="1.5" diameter="3.81" shape="square"/>
-<pad name="BAT-" x="-8" y="-10" drill="1.5" diameter="3.81" shape="square"/>
-<pad name="IN+" x="7" y="11" drill="1.5" diameter="3.81" shape="square"/>
-<pad name="IN-" x="-8" y="11" drill="1.5" diameter="3.81" shape="square"/>
+<pad name="BAT+" x="7.2" y="-10.2" drill="1.8" diameter="3.4" shape="square"/>
+<pad name="BAT-" x="-8.2" y="-10.2" drill="1.8" diameter="3.4" shape="square"/>
+<pad name="IN+" x="7.2" y="11.2" drill="1.8" diameter="3.4" shape="square"/>
+<pad name="IN-" x="-8.2" y="11.2" drill="1.8" diameter="3.4" shape="square"/>
 <text x="-8" y="1" size="1.5" layer="27" font="vector">Lipo Charger</text>
 <text x="5" y="7" size="1.5" layer="51" font="vector">IN+</text>
 <text x="-9" y="7" size="1.5" layer="51" font="vector">IN-</text>
@@ -2133,6 +2132,24 @@ PDF datasheets handed out after emailing them
 <wire x1="30.765" y1="-4.435" x2="30.765" y2="-5.5526" width="0.2032" layer="21"/>
 <wire x1="30.765" y1="-5.5526" x2="21.23" y2="-5.5526" width="0.2032" layer="21"/>
 </package>
+<package name="PAD.02X.02">
+<smd name="P$1" x="0" y="0" dx="0.508" dy="0.508" layer="1"/>
+</package>
+<package name="PAD.03X.03">
+<smd name="P$1" x="0" y="0" dx="0.762" dy="0.762" layer="1" roundness="100" cream="no"/>
+</package>
+<package name="PAD.03X.05">
+<smd name="P$1" x="0" y="0" dx="1.27" dy="1.27" layer="1" roundness="100" cream="no"/>
+</package>
+<package name="PAD.03X.04">
+<smd name="P$1" x="0" y="0" dx="1.016" dy="1.016" layer="1" roundness="100" cream="no"/>
+</package>
+<package name="TP_06TH">
+<description>0.6mm drill test point
+&lt;p&gt;Big enough to stick a strand of cat5 wire into :)</description>
+<pad name="P$1" x="0" y="0" drill="0.6" stop="no"/>
+<circle x="0" y="0" radius="0.381" width="0" layer="30"/>
+</package>
 </packages>
 <symbols>
 <symbol name="WS2812B">
@@ -2193,6 +2210,13 @@ source: http://www.world-semi.com/uploads/soft/130904/1_1500205981.pdf</descript
 <wire x1="-3.948" y1="-0.124" x2="-3.748" y2="-0.324" width="0.254" layer="94"/>
 <wire x1="-3.748" y1="-0.324" x2="-3.748" y2="0.476" width="0.254" layer="94"/>
 <wire x1="-3.748" y1="0.476" x2="-4.148" y2="0.076" width="0.254" layer="94"/>
+</symbol>
+<symbol name="TEST-POINT">
+<wire x1="2.54" y1="0" x2="0" y2="0" width="0.1524" layer="94"/>
+<wire x1="3.302" y1="0.762" x2="3.302" y2="-0.762" width="0.1524" layer="94" curve="180"/>
+<text x="-2.54" y="2.54" size="1.778" layer="95">&gt;Name</text>
+<text x="-2.54" y="-2.54" size="1.778" layer="96">&gt;Value</text>
+<pin name="1" x="0" y="0" visible="off" length="point" rot="R180"/>
 </symbol>
 </symbols>
 <devicesets>
@@ -2272,6 +2296,54 @@ source: http://www.world-semi.com/uploads/soft/130904/1_1500205981.pdf</descript
 <connect gate="G$1" pin="BAT-" pad="BAT-"/>
 <connect gate="G$1" pin="IN+" pad="IN+"/>
 <connect gate="G$1" pin="IN-" pad="IN-"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="TEST-POINT" prefix="TP">
+<description>Bare copper test points for troubleshooting or ICT</description>
+<gates>
+<gate name="G$1" symbol="TEST-POINT" x="0" y="0"/>
+</gates>
+<devices>
+<device name="2" package="PAD.02X.02">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="3" package="PAD.03X.03">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="3X5" package="PAD.03X.05">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="3X4" package="PAD.03X.04">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="TP_06_TH" package="TP_06TH">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
 </connects>
 <technologies>
 <technology name=""/>
@@ -14070,8 +14142,6 @@ FQP27P06 -
 <part name="C23" library="microbuilder" deviceset="CAP_CERAMIC" device="0805-NOOUTLINE" value="1uF"/>
 <part name="U$27" library="microbuilder" deviceset="GND" device=""/>
 <part name="U$28" library="microbuilder" deviceset="GND" device=""/>
-<part name="C22" library="microbuilder" deviceset="CAP_CERAMIC" device="0805-NOOUTLINE" value="10uF"/>
-<part name="U$29" library="microbuilder" deviceset="GND" device=""/>
 <part name="U$30" library="microbuilder" deviceset="GND" device=""/>
 <part name="U$3" library="microbuilder" deviceset="VBUS" device=""/>
 <part name="U$21" library="microbuilder" deviceset="VBAT" device=""/>
@@ -14129,6 +14199,14 @@ FQP27P06 -
 <part name="U$18" library="microbuilder" deviceset="VBAT" device=""/>
 <part name="J1" library="SparkFun-Connectors" deviceset="M04" device="1X04_NO_SILK"/>
 <part name="U$6" library="microbuilder" deviceset="3.3V" device=""/>
+<part name="TP1" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP2" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP3" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP4" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP5" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP6" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP7" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
+<part name="TP8" library="karls-parts-2016-09" deviceset="TEST-POINT" device="TP_06_TH" value=""/>
 </parts>
 <sheets>
 <sheet>
@@ -14156,19 +14234,19 @@ less than 770mOhms
 . AO3401
 . DMP3099
 . IRLML6401</text>
-<text x="50.8" y="119.38" size="1.778" layer="97">Solder to use Schottkey.
-never cut. no need.</text>
+<text x="43.18" y="116.84" size="1.778" layer="97">Solder to use diode only.
+(and don't populate fet diode)
+To use PFET, don't 
+populate charger diode.</text>
 <text x="243.84" y="33.02" size="1.778" layer="97">SUCK TO MY LIBRARY AND FIX</text>
 <text x="223.52" y="15.24" size="1.778" layer="97">SUCK TO MY LIBRARY AND FIX</text>
 </plain>
 <instances>
 <instance part="FRAME1" gate="G$3" x="134.62" y="2.54"/>
-<instance part="C21" gate="G$1" x="93.98" y="119.38"/>
+<instance part="C21" gate="G$1" x="93.98" y="114.3"/>
 <instance part="C23" gate="G$1" x="134.62" y="111.76"/>
 <instance part="U$27" gate="G$1" x="93.98" y="104.14"/>
 <instance part="U$28" gate="G$1" x="134.62" y="104.14"/>
-<instance part="C22" gate="G$1" x="127" y="111.76"/>
-<instance part="U$29" gate="G$1" x="127" y="104.14"/>
 <instance part="U$30" gate="G$1" x="104.14" y="104.14"/>
 <instance part="U$3" gate="G$1" x="12.7" y="170.18"/>
 <instance part="U$21" gate="G$1" x="35.56" y="157.48"/>
@@ -14227,6 +14305,38 @@ never cut. no need.</text>
 <instance part="U$18" gate="G$1" x="93.98" y="170.18"/>
 <instance part="J1" gate="G$1" x="228.6" y="55.88" rot="MR180"/>
 <instance part="U$6" gate="G$1" x="243.84" y="63.5"/>
+<instance part="TP1" gate="G$1" x="20.32" y="35.56" smashed="yes" rot="R180">
+<attribute name="NAME" x="15.24" y="35.56" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="22.86" y="38.1" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="TP2" gate="G$1" x="20.32" y="33.02" smashed="yes" rot="R180">
+<attribute name="NAME" x="15.24" y="33.02" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="22.86" y="35.56" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="TP3" gate="G$1" x="20.32" y="30.48" smashed="yes" rot="R180">
+<attribute name="NAME" x="15.24" y="30.48" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="22.86" y="33.02" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="TP4" gate="G$1" x="20.32" y="27.94" smashed="yes" rot="R180">
+<attribute name="NAME" x="15.24" y="27.94" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="22.86" y="30.48" size="1.778" layer="96" rot="R180"/>
+</instance>
+<instance part="TP5" gate="G$1" x="66.04" y="38.1" smashed="yes">
+<attribute name="NAME" x="71.12" y="38.1" size="1.778" layer="95"/>
+<attribute name="VALUE" x="63.5" y="35.56" size="1.778" layer="96"/>
+</instance>
+<instance part="TP6" gate="G$1" x="66.04" y="35.56" smashed="yes">
+<attribute name="NAME" x="71.12" y="35.56" size="1.778" layer="95"/>
+<attribute name="VALUE" x="63.5" y="33.02" size="1.778" layer="96"/>
+</instance>
+<instance part="TP7" gate="G$1" x="86.36" y="129.54" smashed="yes" rot="R90">
+<attribute name="NAME" x="86.36" y="134.62" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="88.9" y="127" size="1.778" layer="96" rot="R90"/>
+</instance>
+<instance part="TP8" gate="G$1" x="220.98" y="165.1" smashed="yes" rot="R90">
+<attribute name="NAME" x="218.44" y="167.64" size="1.778" layer="95" rot="R180"/>
+<attribute name="VALUE" x="223.52" y="162.56" size="1.778" layer="96" rot="R90"/>
+</instance>
 </instances>
 <busses>
 </busses>
@@ -14240,12 +14350,7 @@ never cut. no need.</text>
 <segment>
 <pinref part="C21" gate="G$1" pin="2"/>
 <pinref part="U$27" gate="G$1" pin="GND"/>
-<wire x1="93.98" y1="116.84" x2="93.98" y2="106.68" width="0.1524" layer="91"/>
-</segment>
-<segment>
-<pinref part="C22" gate="G$1" pin="2"/>
-<pinref part="U$29" gate="G$1" pin="GND"/>
-<wire x1="127" y1="109.22" x2="127" y2="106.68" width="0.1524" layer="91"/>
+<wire x1="93.98" y1="111.76" x2="93.98" y2="106.68" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="U2" gate="G$1" pin="GND"/>
@@ -14423,15 +14528,11 @@ never cut. no need.</text>
 <pinref part="R13" gate="G$1" pin="2"/>
 </segment>
 <segment>
-<wire x1="124.46" y1="124.46" x2="127" y2="124.46" width="0.1524" layer="91"/>
-<wire x1="127" y1="124.46" x2="134.62" y2="124.46" width="0.1524" layer="91"/>
+<wire x1="124.46" y1="124.46" x2="134.62" y2="124.46" width="0.1524" layer="91"/>
 <wire x1="134.62" y1="124.46" x2="134.62" y2="127" width="0.1524" layer="91"/>
 <pinref part="C23" gate="G$1" pin="1"/>
 <wire x1="134.62" y1="124.46" x2="134.62" y2="116.84" width="0.1524" layer="91"/>
 <junction x="134.62" y="124.46"/>
-<pinref part="C22" gate="G$1" pin="1"/>
-<wire x1="127" y1="116.84" x2="127" y2="124.46" width="0.1524" layer="91"/>
-<junction x="127" y="124.46"/>
 <pinref part="U2" gate="G$1" pin="OUT"/>
 <pinref part="U$10" gate="G$1" pin="3.3V"/>
 </segment>
@@ -14571,10 +14672,14 @@ never cut. no need.</text>
 <segment>
 <label x="208.28" y="160.02" size="1.778" layer="95"/>
 <pinref part="R1" gate="G$1" pin="1"/>
-<wire x1="208.28" y1="160.02" x2="223.52" y2="160.02" width="0.1524" layer="91"/>
+<wire x1="208.28" y1="160.02" x2="220.98" y2="160.02" width="0.1524" layer="91"/>
+<wire x1="220.98" y1="160.02" x2="223.52" y2="160.02" width="0.1524" layer="91"/>
 <wire x1="208.28" y1="152.4" x2="208.28" y2="160.02" width="0.1524" layer="91"/>
 <pinref part="LEFT" gate="G$1" pin="2"/>
 <wire x1="208.28" y1="152.4" x2="198.12" y2="152.4" width="0.1524" layer="91"/>
+<wire x1="220.98" y1="165.1" x2="220.98" y2="160.02" width="0.1524" layer="91"/>
+<junction x="220.98" y="160.02"/>
+<pinref part="TP8" gate="G$1" pin="1"/>
 </segment>
 </net>
 <net name="BAT_MON" class="0">
@@ -14600,12 +14705,17 @@ never cut. no need.</text>
 <wire x1="101.6" y1="121.92" x2="104.14" y2="121.92" width="0.1524" layer="91"/>
 <wire x1="101.6" y1="121.92" x2="101.6" y2="124.46" width="0.1524" layer="91"/>
 <pinref part="C21" gate="G$1" pin="1"/>
+<wire x1="93.98" y1="119.38" x2="93.98" y2="124.46" width="0.1524" layer="91"/>
 <wire x1="93.98" y1="124.46" x2="101.6" y2="124.46" width="0.1524" layer="91"/>
 <junction x="101.6" y="124.46"/>
 <wire x1="101.6" y1="124.46" x2="99.06" y2="127" width="0.1524" layer="91"/>
 <label x="91.44" y="127" size="1.778" layer="95"/>
 <pinref part="JP2" gate="G$1" pin="2"/>
-<wire x1="68.58" y1="127" x2="99.06" y2="127" width="0.1524" layer="91"/>
+<wire x1="68.58" y1="127" x2="86.36" y2="127" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="127" x2="99.06" y2="127" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="129.54" x2="86.36" y2="127" width="0.1524" layer="91"/>
+<junction x="86.36" y="127"/>
+<pinref part="TP7" gate="G$1" pin="1"/>
 </segment>
 <segment>
 <wire x1="177.8" y1="129.54" x2="177.8" y2="160.02" width="0.1524" layer="91"/>
@@ -14656,6 +14766,48 @@ never cut. no need.</text>
 <junction x="73.66" y="165.1"/>
 </segment>
 </net>
+<net name="N$1" class="0">
+<segment>
+<pinref part="X2" gate="G$1" pin="GPIO16"/>
+<wire x1="20.32" y1="35.56" x2="25.4" y2="35.56" width="0.1524" layer="91"/>
+<pinref part="TP1" gate="G$1" pin="1"/>
+</segment>
+</net>
+<net name="N$2" class="0">
+<segment>
+<pinref part="X2" gate="G$1" pin="GPIO14"/>
+<wire x1="20.32" y1="33.02" x2="25.4" y2="33.02" width="0.1524" layer="91"/>
+<pinref part="TP2" gate="G$1" pin="1"/>
+</segment>
+</net>
+<net name="N$4" class="0">
+<segment>
+<pinref part="X2" gate="G$1" pin="GPIO12"/>
+<wire x1="20.32" y1="30.48" x2="25.4" y2="30.48" width="0.1524" layer="91"/>
+<pinref part="TP3" gate="G$1" pin="1"/>
+</segment>
+</net>
+<net name="N$5" class="0">
+<segment>
+<pinref part="X2" gate="G$1" pin="GPIO13"/>
+<wire x1="20.32" y1="27.94" x2="25.4" y2="27.94" width="0.1524" layer="91"/>
+<pinref part="TP4" gate="G$1" pin="1"/>
+</segment>
+</net>
+<net name="N$6" class="0">
+<segment>
+<pinref part="X2" gate="G$1" pin="GPIO5"/>
+<wire x1="60.96" y1="38.1" x2="66.04" y2="38.1" width="0.1524" layer="91"/>
+<pinref part="TP5" gate="G$1" pin="1"/>
+</segment>
+</net>
+<net name="N$7" class="0">
+<segment>
+<pinref part="X2" gate="G$1" pin="GPIO4"/>
+<wire x1="60.96" y1="35.56" x2="66.04" y2="35.56" width="0.1524" layer="91"/>
+<pinref part="TP6" gate="G$1" pin="1"/>
+</segment>
+</net>
 </nets>
 </sheet>
 </sheets>
@@ -14675,9 +14827,9 @@ never cut. no need.</text>
 <approved hash="113,1,194.31,127.233,D3,,,,,"/>
 <approved hash="113,1,194.31,111.993,D4,,,,,"/>
 <approved hash="113,1,194.31,96.7528,D5,,,,,"/>
-<approved hash="113,1,230.463,54.8047,J1,,,,,"/>
 <approved hash="113,1,194.903,149.665,LEFT,,,,,"/>
 <approved hash="113,1,197.443,70.9253,RIGHT,,,,,"/>
+<approved hash="113,1,230.463,53.1453,J1,,,,,"/>
 </errors>
 </schematic>
 </drawing>
