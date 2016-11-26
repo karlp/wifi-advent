@@ -683,16 +683,15 @@ Original _worked_ but needed skewed pins. Reduced pads to 3.4mm matching the one
 &lt;p&gt;
 PDF datasheets handed out after emailing them
 &lt;p&gt;Height: 21.3mm
-&lt;p&gt;&lt;b&gt;Pins are actually specified as 2.4mmx1.38mm slot, (vertical) not a 2.4mm drill&lt;/b&gt;
-&lt;p&gt;&lt;b&gt;UNPROVEN</description>
+&lt;p&gt;&lt;b&gt;Recommended PCB layout is 2.4mmx1.38mm slot, (vertical) That is far bigger than necessary with example hardware.  2.0mm is plenty&lt;/b&gt;</description>
 <wire x1="-38.485" y1="10.45" x2="39.215" y2="10.45" width="0.127" layer="21"/>
 <wire x1="39.215" y1="10.45" x2="39.215" y2="-10.45" width="0.127" layer="21"/>
 <wire x1="39.215" y1="-10.45" x2="-38.485" y2="-10.45" width="0.127" layer="21"/>
 <wire x1="-38.485" y1="-10.45" x2="-38.485" y2="10.45" width="0.127" layer="21"/>
 <circle x="-27.805" y="0" radius="1.6" width="0.127" layer="51"/>
 <circle x="27.805" y="0" radius="1.6" width="0.127" layer="51"/>
-<pad name="-" x="-36.45" y="0" drill="2.4"/>
-<pad name="+" x="36.45" y="0" drill="2.4"/>
+<pad name="-" x="-36.45" y="0" drill="2"/>
+<pad name="+" x="36.45" y="0" drill="2"/>
 <wire x1="23.5" y1="1" x2="23.5" y2="-1" width="0.127" layer="21"/>
 <wire x1="22.5" y1="0" x2="24.5" y2="0" width="0.127" layer="21"/>
 <wire x1="-24.5" y1="0" x2="-22.5" y2="0" width="0.127" layer="21"/>
