@@ -13,6 +13,7 @@
 #include <NeoPixelAnimator.h>
 #include <WiFiManager.h>
 #include <AsyncMqttClient.h>
+#include <Ticker.h>
 
 const uint16_t PixelCount = 4;
 const uint8_t PixelPin = 2; // make sure to set this to the correct pin, ignored for Esp8266
@@ -38,6 +39,37 @@ ESP8266HTTPUpdateServer httpUpdater(true);
 
 AsyncMqttClient mqttClient;
 int mqttTicker;
+
+Ticker ledDriver;
+
+struct ledBlinkerState {
+    int count;
+    Ticker *ticker;
+};
+
+struct ledBlinkerState ledBlinker;
+
+void tickLedBootup(int i)
+{
+    strip.RotateLeft(1);
+    strip.Show();
+}
+
+void tickLedBlinker(struct ledBlinkerState *state)
+{
+    if (state->count % 2) {
+        strip.SetPixelColor(0, RgbColor(0, 0, 0));
+        strip.SetPixelColor(1, RgbColor(40, 40, 0));
+    } else {
+        strip.SetPixelColor(0, RgbColor(0, 40, 40));
+        strip.SetPixelColor(1, RgbColor(0, 0, 0));
+    }
+    strip.Show();
+    state->count--;
+    if (state->count <= 0) {
+        state->ticker->detach();
+    }
+}
 
 // what is stored for state is specific to the need, in this case, the colors.
 // basically what ever you need inside the animation update function
@@ -364,14 +396,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     Serial.printf("MQTT: got msg on topic: %s\n", topic);
     // TODO - decode json, either treat as raw set commands, or mode switches to saved patterns
     // or commands like "add allowing this unit to communicate me and all that good jazz
-    for (int i = 0; i < 5; i++) {
-        strip.SetPixelColor(1, RgbColor(40, 40, 0));
-        strip.Show();
-        delay(40);
-        strip.SetPixelColor(0, RgbColor(0, 40, 40));
-        strip.Show();
-        delay(40);
-    }
+    ledBlinker.count = 10;
+    ledBlinker.ticker = &ledDriver;
+    ledDriver.attach_ms(150, tickLedBlinker, &ledBlinker);
 }
 
 void setup_eus()
@@ -485,43 +512,94 @@ void setup_mqtt()
     mqttClient.onMessage(onMqttMessage);
     mqttClient.setServer(mqtt_host, String(mqtt_port).toInt());
     mqttClient.setKeepAlive(60).setCleanSession(false);
+    mqttClient.setClientId("hohoho123");
     mqttClient.setWill("advent/aaa/w", 0, true, "OFF");
     Serial.println("Connecting to MQTT...");
     mqttClient.connect();
+}
+
+String getContentType(String filename)
+{
+    if (httpServer.hasArg("download")) return "application/octet-stream";
+    else if (filename.endsWith(".htm")) return "text/html";
+    else if (filename.endsWith(".html")) return "text/html";
+    else if (filename.endsWith(".css")) return "text/css";
+    else if (filename.endsWith(".js")) return "application/javascript";
+    else if (filename.endsWith(".png")) return "image/png";
+    else if (filename.endsWith(".gif")) return "image/gif";
+    else if (filename.endsWith(".jpg")) return "image/jpeg";
+    else if (filename.endsWith(".ico")) return "image/x-icon";
+    else if (filename.endsWith(".xml")) return "text/xml";
+    else if (filename.endsWith(".pdf")) return "application/x-pdf";
+    else if (filename.endsWith(".zip")) return "application/x-zip";
+    else if (filename.endsWith(".gz")) return "application/x-gzip";
+    return "text/plain";
+}
+
+bool handleFileRead(String path)
+{
+    Serial.println("handleFileRead: " + path);
+    if (path.endsWith("/")) path += "index.htm";
+    String contentType = getContentType(path);
+    String pathWithGz = path + ".gz";
+    if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {
+        if (SPIFFS.exists(pathWithGz))
+            path += ".gz";
+        File file = SPIFFS.open(path, "r");
+        size_t sent = httpServer.streamFile(file, contentType);
+        file.close();
+        return true;
+    }
+    return false;
+}
+
+void setup_webserver(void)
+{
+    httpServer.onNotFound([]() {
+        if (!handleFileRead(httpServer.uri()))
+            httpServer.send(404, "text/plain", "FileNotFound");
+    });
+
 }
 
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Booting Sketch...");
+    SetRandomSeed();
     strip.Begin();
     strip.Show();
     strip.SetPixelColor(0, RgbColor(0, 40, 0));
+    ledDriver.attach_ms(250, tickLedBootup, 0);
     setup_dump_flashinfo();
     Serial.print("Reset reason and info: ");
     Serial.println(ESP.getResetReason());
     Serial.println(ESP.getResetInfo());
 
-    SetRandomSeed();
     setup_eus();
     setup_ota();
     int batt = analogRead(A0);
     Serial.printf("'Battery' adc = %d\n", batt);
 
+    setup_webserver();
+
     setup_mqtt();
+    ledDriver.detach();
 }
 
 void loop()
 {
     httpServer.handleClient();
-    if (animations.IsAnimating()) {
-        // the normal loop just needs these two to run the active animations
-        animations.UpdateAnimations();
-        strip.Show();
-    } else {
-        // no animation runnning, start some
-        //
-        FadeInFadeOutRinseRepeat(0.15f); // 0.0 = black, 0.25 is normal, 0.5 is bright
+    if (!ledDriver.active()) {
+        if (animations.IsAnimating()) {
+            // the normal loop just needs these two to run the active animations
+            animations.UpdateAnimations();
+            strip.Show();
+        } else {
+            // no animation runnning, start some
+            //
+            FadeInFadeOutRinseRepeat(0.15f); // 0.0 = black, 0.25 is normal, 0.5 is bright
+        }
     }
 }
 
