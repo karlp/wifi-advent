@@ -77,6 +77,28 @@ void tickLedBlinker(struct ledBlinkerState *state)
     }
 }
 
+void tickLedBlinkerError(struct ledBlinkerState *state)
+{
+    if (state->count % 3 == 0) {
+        strip.SetPixelColor(0, RgbColor(40, 0, 0));
+        strip.SetPixelColor(1, RgbColor(0, 0, 0));
+        strip.SetPixelColor(2, RgbColor(0, 0, 0));
+    } else if (state->count % 2 == 0) {
+        strip.SetPixelColor(0, RgbColor(20, 0, 0));
+        strip.SetPixelColor(1, RgbColor(40, 0, 0));
+        strip.SetPixelColor(2, RgbColor(00, 0, 0));
+    } else {
+        strip.SetPixelColor(0, RgbColor(0, 0, 0));
+        strip.SetPixelColor(1, RgbColor(20, 0, 0));
+        strip.SetPixelColor(2, RgbColor(40, 0, 0));
+    }
+    strip.Show();
+    state->count--;
+    if (state->count <= 0) {
+        state->ticker->detach();
+    }
+}
+
 // what is stored for state is specific to the need, in this case, the colors.
 // basically what ever you need inside the animation update function
 
@@ -393,14 +415,9 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
 {
     // FIXME - get a useful handler abstraction for blinking leds for status
     Serial.printf("MQTT: disconn: %d\n", reason);
-    for (int i = 0; i < 5; i++) {
-        strip.SetPixelColor(0, RgbColor(40, 0, 0));
-        strip.Show();
-        delay(50);
-        strip.SetPixelColor(0, RgbColor(10, 0, 0));
-        strip.Show();
-        delay(40);
-    }
+    ledBlinker.count = 10;
+    ledBlinker.ticker = &ledDriver;
+    ledDriver.attach_ms(100, tickLedBlinkerError, &ledBlinker);
     mqttClient.connect();
 }
 
