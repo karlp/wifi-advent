@@ -5,6 +5,9 @@
 #include <FS.h>
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
+extern "C" {
+#include "sha1/sha1.h"
+}
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -29,7 +32,10 @@ uint16_t effectState = 0; // general purpose variable used to store effect state
 char mqtt_host[60] = "...";
 char mqtt_port[6] = "1883";
 
-const char *host = "advent";
+int id = ESP.getChipId();
+String host = String("advent-" + String(id, HEX));
+char password[20];
+
 const char* update_path = "/firmware";
 const char* update_username = "...";
 const char* update_password = "...";
@@ -95,6 +101,7 @@ void SetRandomSeed()
         seed ^= analogRead(0) << shifts;
         delay(1);
     }
+    Serial.printf("Randoms seed = %#x\n", seed);
 
     randomSeed(seed);
 }
@@ -151,8 +158,11 @@ void FadeInFadeOutRinseRepeat(float luminance)
     } else if (effectState == 2) {
         int batt = analogRead(A0);
         Serial.printf("'Battery' adc = %d\n", batt);
-        mqttClient.publish("advent/aaa/s/batt", 0, false, String(batt).c_str());
-        mqttClient.publish("advent/aaa/s/tick", 0, false, String(mqttTicker++).c_str());
+        String topicBase = "advent/" + host + "/s";
+        String tb = topicBase + "/batt";
+        mqttClient.publish(tb.c_str(), 0, false, String(batt).c_str());
+        String tt = topicBase + "/tick";
+        mqttClient.publish(tt.c_str(), 0, false, String(mqttTicker++).c_str());
         // Pick a random colour, and a few versions of it...
         RgbColor col = HslColor(random(360) / 360.0f, 1.0f, luminance);
         strip.ClearTo(RgbColor(0));
@@ -249,6 +259,7 @@ void wifi_scan()
 void ota_onStart()
 {
     Serial.println("Starting Update");
+    mqttClient.disconnect();
     strip.ClearTo(RgbColor(0));
     strip.SetPixelColor(0, RgbColor(0, 0, 30));
     strip.SetPixelColor(1, RgbColor(0, 0, 60));
@@ -372,8 +383,10 @@ int save_config()
 void onMqttConnect(bool sessionPresent)
 {
     Serial.printf("MQTT: connected: %d\n", sessionPresent);
-    uint16_t packetIdSub = mqttClient.subscribe("advent/aaa/c", 0);
-    mqttClient.publish("advent/aaa/w", 0, false, "ON");
+    String t = "advent/" + host + "/c";
+    uint16_t packetIdSub = mqttClient.subscribe(t.c_str(), 0);
+    t = "advent/" + host + "/w";
+    mqttClient.publish(t.c_str(), 0, false, "ON");
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -403,17 +416,6 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
 void setup_eus()
 {
-    // FIXME - create from dumb hash of the serial
-
-    if (SPIFFS.begin()) {
-        Serial.println("mounted file system");
-        load_config();
-    } else {
-        Serial.println("failed to mount FS");
-    }
-    yield();
-
-
     WiFi.onEvent(cbWiFiEvent);
     WiFiManager wifiManager;
 
@@ -434,13 +436,15 @@ void setup_eus()
     // Only for testing, throws out everything
     //wifiManager.resetSettings();
 
-    int id = ESP.getChipId();
-    String ssid = String("advent-" + String(id, HEX));
     // FIXME - make this use a random seed to generate and save to config?
-    String key = "simple1234";
+    String key = "";
+    for (int i = 0; i < 4; i++) {
+        key += String(password[i], HEX);
+    }
+    Serial.printf("key=%s\n", key.c_str());
 
     //bool up = wifiManager.autoConnect();    
-    bool up = wifiManager.autoConnect(ssid.c_str(), key.c_str());
+    bool up = wifiManager.autoConnect(host.c_str(), key.c_str());
     Serial.print("wifi auto con returned: ");
     Serial.println(up);
 
@@ -461,29 +465,6 @@ void setup_eus()
         return;
     }
 
-    // delete old config
-    //    WiFi.disconnect(true);
-    //
-    //    delay(100);
-
-
-    // quick scan on boot to help check what's going on....
-    //    wifi_scan();
-    //    delay(100);
-    //    // delete old config
-    //    WiFi.disconnect(true);
-    //
-    //    delay(100);
-
-    //    WiFi.mode(WIFI_STA);
-    //    WiFi.begin(ssid, password);
-
-    //
-    //    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    //        WiFi.begin(ssid, password);
-    //        Serial.println("WiFi failed, retrying.");
-    //    }
-
 }
 
 void setup_ota()
@@ -494,13 +475,14 @@ void setup_ota()
     httpUpdater.onError(ota_onError);
     httpUpdater.onProgress(ota_onProgress);
 
-    MDNS.begin(host);
+    // Use our ssid as our hostname too
+    MDNS.begin(host.c_str());
 
     httpUpdater.setup(&httpServer, update_path, update_username, update_password);
     httpServer.begin();
 
     MDNS.addService("http", "tcp", 80);
-    Serial.printf("HTTPUpdateServer ready! Open http://%s.local%s in your browser and login with username '%s' and password '%s'\n", host, update_path, update_username, update_password);
+    Serial.printf("HTTPUpdateServer ready! Open http://%s.local%s in your browser and login with username '%s' and password '%s'\n", host.c_str(), update_path, update_username, update_password);
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
 }
@@ -511,9 +493,10 @@ void setup_mqtt()
     mqttClient.onDisconnect(onMqttDisconnect);
     mqttClient.onMessage(onMqttMessage);
     mqttClient.setServer(mqtt_host, String(mqtt_port).toInt());
-    mqttClient.setKeepAlive(60).setCleanSession(false);
-    mqttClient.setClientId("hohoho123");
-    mqttClient.setWill("advent/aaa/w", 0, true, "OFF");
+    mqttClient.setKeepAlive(60).setCleanSession(true);
+    mqttClient.setClientId(host.c_str());
+    String topic = "advent/" + host + "/w";
+    mqttClient.setWill(topic.c_str(), 1, true, "OFF", 0);
     Serial.println("Connecting to MQTT...");
     mqttClient.connect();
 }
@@ -562,11 +545,33 @@ void setup_webserver(void)
 
 }
 
+/**
+ * hash the serial number a few times to get a durable, but not entirely
+ * predictable key.
+ */
+void setup_password() {
+    SHA1_CTX ctx;
+    SHA1Init(&ctx);
+    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
+    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
+    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
+    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
+    SHA1Final((unsigned char*)password, &ctx);
+}
+
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Booting Sketch...");
     SetRandomSeed();
+    if (SPIFFS.begin()) {
+        Serial.println("mounted file system");
+        load_config();
+    } else {
+        Serial.println("failed to mount FS");
+    }
+    yield();
+    setup_password();
     strip.Begin();
     strip.Show();
     strip.SetPixelColor(0, RgbColor(0, 40, 0));
