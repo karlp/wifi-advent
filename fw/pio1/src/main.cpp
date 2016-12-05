@@ -15,7 +15,6 @@ extern "C" {
 #include <NeoPixelBus.h>
 #include <NeoPixelAnimator.h>
 #include <WiFiManager.h>
-#include <AsyncMqttClient.h>
 #include <Ticker.h>
 
 const uint16_t PixelCount = 4;
@@ -29,9 +28,6 @@ NeoPixelAnimator animations(AnimationChannels); // NeoPixel animation management
 
 uint16_t effectState = 0; // general purpose variable used to store effect state
 
-char mqtt_host[60] = "...";
-char mqtt_port[6] = "1883";
-
 int id = ESP.getChipId();
 String host = String("advent-" + String(id, HEX));
 char password[20];
@@ -42,9 +38,6 @@ const char* update_password = "...";
 
 ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater(true);
-
-AsyncMqttClient mqttClient;
-int mqttTicker;
 
 Ticker ledDriver;
 
@@ -180,11 +173,6 @@ void FadeInFadeOutRinseRepeat(float luminance)
     } else if (effectState == 2) {
         int batt = analogRead(A0);
         Serial.printf("'Battery' adc = %d\n", batt);
-        String topicBase = "advent/" + host + "/s";
-        String tb = topicBase + "/batt";
-        mqttClient.publish(tb.c_str(), 0, false, String(batt).c_str());
-        String tt = topicBase + "/tick";
-        mqttClient.publish(tt.c_str(), 0, false, String(mqttTicker++).c_str());
         // Pick a random colour, and a few versions of it...
         RgbColor col = HslColor(random(360) / 360.0f, 1.0f, luminance);
         strip.ClearTo(RgbColor(0));
@@ -281,7 +269,6 @@ void wifi_scan()
 void ota_onStart()
 {
     Serial.println("Starting Update");
-    mqttClient.disconnect();
     strip.ClearTo(RgbColor(0));
     strip.SetPixelColor(0, RgbColor(0, 0, 30));
     strip.SetPixelColor(1, RgbColor(0, 0, 60));
@@ -366,16 +353,16 @@ int load_config()
     json.printTo(Serial);
     if (json.success()) {
         Serial.println("\nparsed json");
-        if (json.containsKey("mqtt_server")) {
-            // fallback
-            strcpy(mqtt_host, json["mqtt_server"]);
-        }
-        if (json.containsKey("mqtt_host")) {
-            strcpy(mqtt_host, json["mqtt_host"]);
-        }
-        if (json.containsKey("mqtt_port")) {
-            strcpy(mqtt_port, json["mqtt_port"]);
-        }
+//        if (json.containsKey("mqtt_server")) {
+//            // fallback
+//            strcpy(mqtt_host, json["mqtt_server"]);
+//        }
+//        if (json.containsKey("mqtt_host")) {
+//            strcpy(mqtt_host, json["mqtt_host"]);
+//        }
+//        if (json.containsKey("mqtt_port")) {
+//            strcpy(mqtt_port, json["mqtt_port"]);
+//        }
     } else {
         Serial.println("failed to load json config");
         return -3;
@@ -387,8 +374,8 @@ int save_config()
 {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-    json["mqtt_host"] = mqtt_host;
-    json["mqtt_port"] = mqtt_port;
+//    json["mqtt_host"] = mqtt_host;
+//    json["mqtt_port"] = mqtt_port;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -400,35 +387,6 @@ int save_config()
     json.printTo(configFile);
     configFile.close();
     return 0;
-}
-
-void onMqttConnect(bool sessionPresent)
-{
-    Serial.printf("MQTT: connected: %d\n", sessionPresent);
-    String t = "advent/" + host + "/c";
-    uint16_t packetIdSub = mqttClient.subscribe(t.c_str(), 0);
-    t = "advent/" + host + "/w";
-    mqttClient.publish(t.c_str(), 0, false, "ON");
-}
-
-void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
-{
-    // FIXME - get a useful handler abstraction for blinking leds for status
-    Serial.printf("MQTT: disconn: %d\n", reason);
-    ledBlinker.count = 10;
-    ledBlinker.ticker = &ledDriver;
-    ledDriver.attach_ms(100, tickLedBlinkerError, &ledBlinker);
-    mqttClient.connect();
-}
-
-void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
-{
-    Serial.printf("MQTT: got msg on topic: %s\n", topic);
-    // TODO - decode json, either treat as raw set commands, or mode switches to saved patterns
-    // or commands like "add allowing this unit to communicate me and all that good jazz
-    ledBlinker.count = 10;
-    ledBlinker.ticker = &ledDriver;
-    ledDriver.attach_ms(150, tickLedBlinker, &ledBlinker);
 }
 
 void setup_eus()
@@ -444,11 +402,11 @@ void setup_eus()
     // The extra parameters to be configured (can be either global or just in the setup)
     // After connecting, parameter.getValue() will get you the configured value
     // id/name placeholder/prompt default length
-    WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
-    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
-
-    wifiManager.addParameter(&custom_mqtt_server);
-    wifiManager.addParameter(&custom_mqtt_port);
+//    WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
+//    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
+//
+//    wifiManager.addParameter(&custom_mqtt_server);
+//    wifiManager.addParameter(&custom_mqtt_port);
 
     // Only for testing, throws out everything
     //wifiManager.resetSettings();
@@ -468,9 +426,9 @@ void setup_eus()
     if (shouldSaveConfig) {
         shouldSaveConfig = false;
         Serial.println("Reached loop, need to save config!");
-        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
-        strcpy(mqtt_host, custom_mqtt_server.getValue());
-        strcpy(mqtt_port, custom_mqtt_port.getValue());
+//        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
+//        strcpy(mqtt_host, custom_mqtt_server.getValue());
+//        strcpy(mqtt_port, custom_mqtt_port.getValue());
         save_config();
     }
 
@@ -504,19 +462,6 @@ void setup_ota()
     Serial.println(WiFi.localIP());
 }
 
-void setup_mqtt()
-{
-    mqttClient.onConnect(onMqttConnect);
-    mqttClient.onDisconnect(onMqttDisconnect);
-    mqttClient.onMessage(onMqttMessage);
-    mqttClient.setServer(mqtt_host, String(mqtt_port).toInt());
-    mqttClient.setKeepAlive(60).setCleanSession(true);
-    mqttClient.setClientId(host.c_str());
-    String topic = "advent/" + host + "/w";
-    mqttClient.setWill(topic.c_str(), 1, true, "OFF", 0);
-    Serial.println("Connecting to MQTT...");
-    mqttClient.connect();
-}
 
 String getContentType(String filename)
 {
@@ -605,7 +550,6 @@ void setup()
 
     setup_webserver();
 
-    setup_mqtt();
     ledDriver.detach();
 }
 
