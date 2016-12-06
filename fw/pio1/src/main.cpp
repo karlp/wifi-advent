@@ -5,16 +5,19 @@
 #include <FS.h>
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
+// Reach into the SDK for a few things not exposed by arduino land
 extern "C" {
 #include "sha1/sha1.h"
+#include "user_interface.h"
 }
+
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <NeoPixelBus.h>
 #include <NeoPixelAnimator.h>
-#include <WiFiManager.h>
+#include <WiFiManager_async.h>
 #include <Ticker.h>
 
 const uint16_t PixelCount = 4;
@@ -30,7 +33,6 @@ uint16_t effectState = 0; // general purpose variable used to store effect state
 
 int id = ESP.getChipId();
 String host = String("advent-" + String(id, HEX));
-char password[20];
 
 const char* update_path = "/firmware";
 const char* update_username = "...";
@@ -38,6 +40,7 @@ const char* update_password = "...";
 
 ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater(true);
+WiFiManager_async wifiManager;
 
 Ticker ledDriver;
 
@@ -92,6 +95,23 @@ void tickLedBlinkerError(struct ledBlinkerState *state)
     }
 }
 
+/**
+ * hash the serial number a few times to get a durable, but not entirely
+ * predictable key.
+ * @param hash needs space for 20 bytes!
+ */
+void setup_password(unsigned char *hash)
+{
+    SHA1_CTX ctx;
+    SHA1Init(&ctx);
+    SHA1Update(&ctx, (uint8_t*) host.c_str(), host.length());
+    SHA1Update(&ctx, (uint8_t*) host.c_str(), host.length());
+    SHA1Update(&ctx, (uint8_t*) host.c_str(), host.length());
+    SHA1Update(&ctx, (uint8_t*) host.c_str(), host.length());
+    SHA1Final((unsigned char*) hash, &ctx);
+}
+
+
 // what is stored for state is specific to the need, in this case, the colors.
 // basically what ever you need inside the animation update function
 
@@ -105,20 +125,6 @@ MyAnimationState animationState[AnimationChannels];
 
 void SetRandomSeed()
 {
-    uint32_t seed;
-
-    // random works best with a seed that can use 31 bits
-    // analogRead on a unconnected pin tends toward less than four bits
-    seed = analogRead(0);
-    delay(1);
-
-    for (int shifts = 3; shifts < 31; shifts += 3) {
-        seed ^= analogRead(0) << shifts;
-        delay(1);
-    }
-    Serial.printf("Randoms seed = %#x\n", seed);
-
-    randomSeed(seed);
 }
 
 // simple blend function
@@ -219,7 +225,7 @@ void cbWiFiEvent(WiFiEvent_t event)
     }
 }
 
-void setup_dump_flashinfo()
+void setup_dump_device()
 {
     uint32_t realSize = ESP.getFlashChipRealSize();
     uint32_t ideSize = ESP.getFlashChipSize();
@@ -237,6 +243,11 @@ void setup_dump_flashinfo()
     } else {
         Serial.println("Flash Chip configuration ok.\n");
     }
+
+    Serial.print("CoreVersion: " + ESP.getCoreVersion() + " bootv: ");
+    Serial.println(ESP.getBootVersion());
+
+    Serial.printf("SDK Version: %s\n", ESP.getSdkVersion());
 
 }
 
@@ -292,15 +303,15 @@ void ota_onEnd()
 void ota_onError(int i)
 {
     Serial.println(">>>OTA Failed?"); // FIXME - decode error!
-    for (int i = 0; i < 10; i++) {
-        strip.ClearTo(RgbColor(40, 0, 0));
-        strip.Show();
-        delay(25);
-        strip.ClearTo(RgbColor(0));
-        strip.Show();
-        delay(25);
-    }
-    ESP.restart();
+    //    for (int i = 0; i < 10; i++) {
+    //        strip.ClearTo(RgbColor(40, 0, 0));
+    //        strip.Show();
+    //        delay(25);
+    //        strip.ClearTo(RgbColor(0));
+    //        strip.Show();
+    //        delay(25);
+    //    }
+    //    ESP.restart();
 }
 
 void ota_onProgress(unsigned int i, unsigned int j)
@@ -313,12 +324,13 @@ void ota_onProgress(unsigned int i, unsigned int j)
 /**
  * Entered on failed wifi conn or no config
  */
-void handle_config_enter(WiFiManager *myWiFiManager)
+void handle_config_enter(WiFiManager_async *myWiFiManager)
 {
     // BLink leds green?
     Serial.println("Failed to connect, or no settings");
     Serial.println(WiFi.softAPIP());
     Serial.println(myWiFiManager->getConfigPortalSSID());
+    // FIXME - add ticker with new colour/speed instead of rotating green
 }
 
 bool shouldSaveConfig;
@@ -353,16 +365,16 @@ int load_config()
     json.printTo(Serial);
     if (json.success()) {
         Serial.println("\nparsed json");
-//        if (json.containsKey("mqtt_server")) {
-//            // fallback
-//            strcpy(mqtt_host, json["mqtt_server"]);
-//        }
-//        if (json.containsKey("mqtt_host")) {
-//            strcpy(mqtt_host, json["mqtt_host"]);
-//        }
-//        if (json.containsKey("mqtt_port")) {
-//            strcpy(mqtt_port, json["mqtt_port"]);
-//        }
+        //        if (json.containsKey("mqtt_server")) {
+        //            // fallback
+        //            strcpy(mqtt_host, json["mqtt_server"]);
+        //        }
+        //        if (json.containsKey("mqtt_host")) {
+        //            strcpy(mqtt_host, json["mqtt_host"]);
+        //        }
+        //        if (json.containsKey("mqtt_port")) {
+        //            strcpy(mqtt_port, json["mqtt_port"]);
+        //        }
     } else {
         Serial.println("failed to load json config");
         return -3;
@@ -374,8 +386,8 @@ int save_config()
 {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-//    json["mqtt_host"] = mqtt_host;
-//    json["mqtt_port"] = mqtt_port;
+    //    json["mqtt_host"] = mqtt_host;
+    //    json["mqtt_port"] = mqtt_port;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -389,60 +401,73 @@ int save_config()
     return 0;
 }
 
-void setup_eus()
+void setup_eus(ESP8266WebServer &ws)
 {
-    WiFi.onEvent(cbWiFiEvent);
-    WiFiManager wifiManager;
-
+    Serial.println("(Re)initializing EUS");
     wifiManager.setDebugOutput(true);
     wifiManager.setSaveConfigCallback(handle_config_save);
     wifiManager.setAPCallback(handle_config_enter);
-    wifiManager.setConfigPortalTimeout(240);
 
     // The extra parameters to be configured (can be either global or just in the setup)
     // After connecting, parameter.getValue() will get you the configured value
     // id/name placeholder/prompt default length
-//    WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
-//    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
-//
-//    wifiManager.addParameter(&custom_mqtt_server);
-//    wifiManager.addParameter(&custom_mqtt_port);
+    //    WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
+    //    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
+    //
+    //    wifiManager.addParameter(&custom_mqtt_server);
+    //    wifiManager.addParameter(&custom_mqtt_port);
 
     // Only for testing, throws out everything
     //wifiManager.resetSettings();
-
     // FIXME - make this use a random seed to generate and save to config?
+    unsigned char password[20];
+    setup_password(password);
     String key = "";
     for (int i = 0; i < 4; i++) {
         key += String(password[i], HEX);
     }
     Serial.printf("key=%s\n", key.c_str());
-
-    //bool up = wifiManager.autoConnect();    
-    bool up = wifiManager.autoConnect(host.c_str(), key.c_str());
-    Serial.print("wifi auto con returned: ");
-    Serial.println(up);
-
-    if (shouldSaveConfig) {
-        shouldSaveConfig = false;
-        Serial.println("Reached loop, need to save config!");
-//        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
-//        strcpy(mqtt_host, custom_mqtt_server.getValue());
-//        strcpy(mqtt_port, custom_mqtt_port.getValue());
-        save_config();
-    }
-
-    if (!up) {
-        // FIXME - restarting here means we _require_ a wifi uplink before you can even try updating firmware.
-        // We probably want a way of offering firmware updates even without.  Perhaps
-        // via a config option manager?
-        Serial.println("Failed to connect, falling back to existing code?");
-        return;
-    }
-
+    wifiManager.startConfigPortal_async(host.c_str(), key.c_str(), &ws);
 }
 
-void setup_ota()
+/**
+ * Check config, if the user has configured a wifi network to join,
+ * start a process that tries periodically to connect to it.
+ * If not, run as a protected AP.  webserver pages are the same regardless.
+ */
+void setup_networking(void)
+{
+#if 0
+    WiFi.printDiag(Serial);
+    WiFi.onEvent(cbWiFiEvent);
+    wl_status_t st = WiFi.begin();
+    Serial.printf("ok, wifi begin returned: %d\n", st);
+    // uym, ok, that might be enough?
+
+
+    bool has_config = false;
+    if (has_config) {
+        Serial.println("FIXME - unimplemented!");
+        panic();
+    }
+    WiFi.persistent(true);
+    WiFi.mode(WIFI_AP_STA);
+
+    unsigned char dhash[20];
+    setup_password(dhash);
+    String key = "";
+    for (int i = 0; i < 4; i++) {
+        key += String(dhash[i], HEX);
+    }
+    Serial.printf("key=%s\n", key.c_str());
+    WiFi.softAP(host.c_str(), key.c_str());
+    IPAddress myIP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(myIP);
+#endif
+}
+
+void setup_ota(ESP8266WebServer &ws)
 {
 
     httpUpdater.onStart(ota_onStart);
@@ -451,17 +476,18 @@ void setup_ota()
     httpUpdater.onProgress(ota_onProgress);
 
     // Use our ssid as our hostname too
-    MDNS.begin(host.c_str());
+    //MDNS.begin(host.c_str());
 
-    httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-    httpServer.begin();
+    httpUpdater.setup(&ws, update_path, update_username, update_password);
+    ws.begin();
 
-    MDNS.addService("http", "tcp", 80);
+    //MDNS.addService("http", "tcp", 80);
     Serial.printf("HTTPUpdateServer ready! Open http://%s.local%s in your browser and login with username '%s' and password '%s'\n", host.c_str(), update_path, update_username, update_password);
-    Serial.println("IP address: ");
+    Serial.println("(Local) IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.println("(If AP) IP address: ");
+    Serial.println(WiFi.softAPIP());
 }
-
 
 String getContentType(String filename)
 {
@@ -504,58 +530,91 @@ void setup_webserver(void)
         if (!handleFileRead(httpServer.uri()))
             httpServer.send(404, "text/plain", "FileNotFound");
     });
+    httpServer.on("/advent", [&](){
+        File file = SPIFFS.open("/index.htm", "r");
+        size_t sent = httpServer.streamFile(file, "text/html");
+        file.close();
+        return true;
+    });
+    httpServer.on("/forget", [&]() {
+        Serial.println("delete config and reboot?");
+        // FIXME - delete any json config too?
+        // We need to be storing saved led prefs too!
+        httpServer.send(200, "application/json", "{'msg': 'forget went ok'}");
+        system_restore();
+        ESP.restart();
 
-}
+    });
+    httpServer.on("/reconfig", [&]() {
+        Serial.println("fire up on demand config/ap thing");
+    });
 
-/**
- * hash the serial number a few times to get a durable, but not entirely
- * predictable key.
- */
-void setup_password() {
-    SHA1_CTX ctx;
-    SHA1Init(&ctx);
-    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
-    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
-    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
-    SHA1Update(&ctx, (uint8_t*)host.c_str(), host.length());
-    SHA1Final((unsigned char*)password, &ctx);
 }
 
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Booting Sketch...");
-    SetRandomSeed();
+    // stable, and at least unique per device.
+    randomSeed(id);
+    strip.Begin();
+    strip.Show();
+    strip.SetPixelColor(0, RgbColor(0, 40, 0));
+    ledDriver.attach_ms(250, tickLedBootup, 0);
     if (SPIFFS.begin()) {
         Serial.println("mounted file system");
         load_config();
     } else {
         Serial.println("failed to mount FS");
     }
-    yield();
-    setup_password();
-    strip.Begin();
-    strip.Show();
-    strip.SetPixelColor(0, RgbColor(0, 40, 0));
-    ledDriver.attach_ms(250, tickLedBootup, 0);
-    setup_dump_flashinfo();
+
+    setup_dump_device();
     Serial.print("Reset reason and info: ");
     Serial.println(ESP.getResetReason());
     Serial.println(ESP.getResetInfo());
 
-    setup_eus();
-    setup_ota();
-    int batt = analogRead(A0);
-    Serial.printf("'Battery' adc = %d\n", batt);
+    WiFi.onEvent(cbWiFiEvent);
+
+    setup_eus(httpServer);
+    setup_ota(httpServer);
 
     setup_webserver();
 
     ledDriver.detach();
+    //pinMode(2, OUTPUT);
 }
+
+int hoho;
 
 void loop()
 {
+    // handles both eus _and_ ota
     httpServer.handleClient();
+    bool eusv = wifiManager.loop();
+    if (eusv) {
+        Serial.printf("wifi loop finished!\n");
+        // manager gave up or succeeded
+        bool up = wifiManager.endConfigPortal_async();
+        if (up) {
+            Serial.println("EUS COMPLETE! we're now a station!");
+        } else {
+            // Means that EUS failed to connect to the requested server.
+            // no biggie, but should probably provide a button press to restart if desired?
+            Serial.println("EUS gave up!");
+            //setup_eus(httpServer);
+        }
+    }
+
+    if (shouldSaveConfig) {
+        shouldSaveConfig = false;
+        Serial.println("Reached loop, need to save config!");
+        //        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
+        //        strcpy(mqtt_host, custom_mqtt_server.getValue());
+        //        strcpy(mqtt_port, custom_mqtt_port.getValue());
+        save_config();
+    }
+
+
     if (!ledDriver.active()) {
         if (animations.IsAnimating()) {
             // the normal loop just needs these two to run the active animations
