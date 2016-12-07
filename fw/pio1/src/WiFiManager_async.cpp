@@ -201,8 +201,10 @@ bool WiFiManager_async::loop(void) {
 void WiFiManager_async::startConfigPortal_async(const char *apName, const char *apPassword, ESP8266WebServer *ws)
 {
     // attempt to connect; should it fail, fall back to AP
-    WiFi.mode(WIFI_STA);
+    bool x = WiFi.mode(WIFI_STA);
 
+    DEBUG_WM(F("Attempting reconn, setting STA mode: "));
+    DEBUG_WM(x);
     if (connectWifi("", "") == WL_CONNECTED) {
         DEBUG_WM(F("IP Address:"));
         DEBUG_WM(WiFi.localIP());
@@ -210,8 +212,9 @@ void WiFiManager_async::startConfigPortal_async(const char *apName, const char *
         return;
     }
 
-    WiFi.mode(WIFI_AP_STA);
-    DEBUG_WM("SET AP STA");
+    x = WiFi.mode(WIFI_AP_STA);
+    DEBUG_WM(F("SET AP STA: "));
+    DEBUG_WM(x);
 
     _apName = apName;
     _apPassword = apPassword;

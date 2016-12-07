@@ -327,8 +327,9 @@ void ota_onProgress(unsigned int i, unsigned int j)
 void handle_config_enter(WiFiManager_async *myWiFiManager)
 {
     // BLink leds green?
-    Serial.println("Failed to connect, or no settings");
+    Serial.print("config enter (failed to autoconnect): APIP: ");
     Serial.println(WiFi.softAPIP());
+    Serial.print("SSID (portal): ");
     Serial.println(myWiFiManager->getConfigPortalSSID());
     // FIXME - add ticker with new colour/speed instead of rotating green
 }
@@ -337,7 +338,7 @@ bool shouldSaveConfig;
 
 void handle_config_save(void)
 {
-    Serial.println("Should save config");
+    Serial.println("Should save config (got connected)");
     shouldSaveConfig = true;
 }
 
@@ -427,6 +428,7 @@ void setup_eus(ESP8266WebServer &ws)
         key += String(password[i], HEX);
     }
     Serial.printf("key=%s\n", key.c_str());
+    Serial.println("Starting portal async!");
     wifiManager.startConfigPortal_async(host.c_str(), key.c_str(), &ws);
 }
 
@@ -582,6 +584,7 @@ void setup()
 
     ledDriver.detach();
     //pinMode(2, OUTPUT);
+    Serial.println("----setup-finished----");
 }
 
 int hoho;
