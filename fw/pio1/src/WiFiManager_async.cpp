@@ -72,7 +72,7 @@ void WiFiManager_async::addParameter(WiFiManagerParameter *p) {
 }
 
 void WiFiManager_async::setupConfigPortal(ESP8266WebServer *ws) {
-  dnsServer.reset(new DNSServer());
+//  dnsServer.reset(new DNSServer());
   if (ws) {
       server.reset(ws);
   } else {
@@ -111,8 +111,8 @@ void WiFiManager_async::setupConfigPortal(ESP8266WebServer *ws) {
   DEBUG_WM(WiFi.softAPIP());
 
   /* Setup the DNS server redirecting all the domains to the apIP */
-  dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
-  dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
+//  dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
+//  dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
 
   /* Setup web pages: root, wifi config pages, SO captive portal detectors and not found. */
   server->on("/", std::bind(&WiFiManager_async::handleRoot, this));
@@ -157,7 +157,7 @@ boolean WiFiManager_async::autoConnect(char const *apName, char const *apPasswor
 
 bool WiFiManager_async::loop(void) {
     //DNS
-    dnsServer->processNextRequest();
+//    dnsServer->processNextRequest();
     //HTTP only if we own it
     if (_serverPrivate) {
         server->handleClient();
@@ -234,7 +234,7 @@ boolean WiFiManager_async::endConfigPortal_async(void)
     if (_serverPrivate) {
         server.reset();
     }
-    dnsServer.reset();
+//    dnsServer.reset();
 
     return WiFi.status() == WL_CONNECTED;
 }
@@ -263,7 +263,7 @@ boolean  WiFiManager_async::startConfigPortal(char const *apName, char const *ap
   }
 
   server.reset();
-  dnsServer.reset();
+//  dnsServer.reset();
 
   return  WiFi.status() == WL_CONNECTED;
 }
