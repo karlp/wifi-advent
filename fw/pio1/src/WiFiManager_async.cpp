@@ -163,6 +163,9 @@ bool WiFiManager_async::loop(void) {
         server->handleClient();
     }
 
+    // FIXME - karl, instead of a single connect attempt, retry every X seconds
+    // for up to Y retries before returning.  (And maybe return some sort of
+    // error code a bit better, or set some state that can be checked?
 
     if (connect) {
       connect = false;
