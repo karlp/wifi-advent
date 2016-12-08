@@ -19,30 +19,39 @@ extern "C" {
 #include <NeoPixelAnimator.h>
 #include <WiFiManager_async.h>
 #include <Ticker.h>
+#include <AsyncMqttClient.h>
 
 const uint16_t PixelCount = 7;
 const uint8_t PixelPin = 2; // make sure to set this to the correct pin, ignored for Esp8266
-const uint8_t AnimationChannels = 1; // we only need one as all the pixels are animated at once
 
 // This is the pin we have wired up. (works with both nodemcu+arduino codebases)
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(PixelCount, PixelPin);
 
-NeoPixelAnimator animations(AnimationChannels); // NeoPixel animation management object
+NeoPixelAnimator animations(PixelCount, NEO_CENTISECONDS);
 
 uint16_t effectState = 0; // general purpose variable used to store effect state
 
+// Nasty globals!
 int id = ESP.getChipId();
 String host = String("advent-" + String(id, HEX));
+//char _host_c[40];
 
 const char* update_path = "/firmware";
 const char* update_username = "...";
 const char* update_password = "...";
 
+char mqtt_host[60] = "...";
+char mqtt_port[6] = "1883";
+WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
+WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
+
+AsyncMqttClient mqttClient;
 ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater(true);
 WiFiManager_async wifiManager;
 
 Ticker ledDriver;
+Ticker mqttReconnectDriver;
 
 struct ledBlinkerState {
     int count;
@@ -114,7 +123,7 @@ void setup_password(unsigned char *hash)
 
 // what is stored for state is specific to the need, in this case, the colors.
 // basically what ever you need inside the animation update function
-
+#if 0
 struct MyAnimationState {
     RgbColor StartingColor;
     RgbColor EndingColor;
@@ -179,6 +188,11 @@ void FadeInFadeOutRinseRepeat(float luminance)
     } else if (effectState == 2) {
         int batt = analogRead(A0);
         Serial.printf("'Battery' adc = %d\n", batt);
+
+        String topicBase = "advent/" + host + "/s";
+        String tb = topicBase + "/batt";
+        mqttClient.publish(tb.c_str(), 0, false, String(batt).c_str());
+
         // Pick a random colour, and a few versions of it...
         RgbColor col = HslColor(random(360) / 360.0f, 1.0f, luminance);
         strip.ClearTo(RgbColor(0));
@@ -190,6 +204,7 @@ void FadeInFadeOutRinseRepeat(float luminance)
     // toggle to the next effect state
     effectState = (effectState + 1) % 3;
 }
+#endif
 
 void cbWiFiEvent(WiFiEvent_t event)
 {
@@ -279,6 +294,7 @@ void wifi_scan()
 
 void ota_onStart()
 {
+    mqttClient.disconnect();
     Serial.println("Starting Update");
     strip.ClearTo(RgbColor(0));
     strip.SetPixelColor(0, RgbColor(0, 0, 30));
@@ -366,16 +382,16 @@ int load_config()
     json.printTo(Serial);
     if (json.success()) {
         Serial.println("\nparsed json");
-        //        if (json.containsKey("mqtt_server")) {
-        //            // fallback
-        //            strcpy(mqtt_host, json["mqtt_server"]);
-        //        }
-        //        if (json.containsKey("mqtt_host")) {
-        //            strcpy(mqtt_host, json["mqtt_host"]);
-        //        }
-        //        if (json.containsKey("mqtt_port")) {
-        //            strcpy(mqtt_port, json["mqtt_port"]);
-        //        }
+        if (json.containsKey("mqtt_server")) {
+            // fallback
+            strcpy(mqtt_host, json["mqtt_server"]);
+        }
+        if (json.containsKey("mqtt_host")) {
+            strcpy(mqtt_host, json["mqtt_host"]);
+        }
+        if (json.containsKey("mqtt_port")) {
+            strcpy(mqtt_port, json["mqtt_port"]);
+        }
     } else {
         Serial.println("failed to load json config");
         return -3;
@@ -387,8 +403,8 @@ int save_config()
 {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-    //    json["mqtt_host"] = mqtt_host;
-    //    json["mqtt_port"] = mqtt_port;
+    json["mqtt_host"] = mqtt_host;
+    json["mqtt_port"] = mqtt_port;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -402,6 +418,42 @@ int save_config()
     return 0;
 }
 
+void onMqttConnect(bool sessionPresent)
+{
+    Serial.printf("MQTT: connected: %d\n", sessionPresent);
+    mqttReconnectDriver.detach();
+    String t = "advent/" + host + "/c";
+    uint16_t packetIdSub = mqttClient.subscribe(t.c_str(), 0);
+    t = "advent/" + host + "/w";
+    mqttClient.publish(t.c_str(), 0, false, "ON");
+}
+
+static void mqttReconnectHandler(void)
+{
+    mqttClient.connect();
+}
+
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
+{
+    // FIXME - get a useful handler abstraction for blinking leds for status
+    Serial.printf("MQTT: disconn: %d\n", reason);
+    ledBlinker.count = 10;
+    ledBlinker.ticker = &ledDriver;
+    ledDriver.attach_ms(100, tickLedBlinkerError, &ledBlinker);
+    // hey, probably don'ty do this immediately!
+    mqttReconnectDriver.attach_ms(15000, mqttReconnectHandler);
+}
+
+void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
+{
+    Serial.printf("MQTT: got msg on topic: %s\n", topic);
+    // TODO - decode json, either treat as raw set commands, or mode switches to saved patterns
+    // or commands like "add allowing this unit to communicate me and all that good jazz
+    ledBlinker.count = 10;
+    ledBlinker.ticker = &ledDriver;
+    ledDriver.attach_ms(150, tickLedBlinker, &ledBlinker);
+}
+
 void setup_eus(ESP8266WebServer &ws)
 {
     Serial.println("(Re)initializing EUS");
@@ -412,11 +464,8 @@ void setup_eus(ESP8266WebServer &ws)
     // The extra parameters to be configured (can be either global or just in the setup)
     // After connecting, parameter.getValue() will get you the configured value
     // id/name placeholder/prompt default length
-    //    WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
-    //    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, sizeof (mqtt_port));
-    //
-    //    wifiManager.addParameter(&custom_mqtt_server);
-    //    wifiManager.addParameter(&custom_mqtt_port);
+    wifiManager.addParameter(&custom_mqtt_server);
+    wifiManager.addParameter(&custom_mqtt_port);
 
     // Only for testing, throws out everything
     //wifiManager.resetSettings();
@@ -476,8 +525,6 @@ void setup_ota(ESP8266WebServer &ws)
     httpUpdater.onEnd(ota_onEnd);
     httpUpdater.onError(ota_onError);
     httpUpdater.onProgress(ota_onProgress);
-
-    // Use our ssid as our hostname too
 
     httpUpdater.setup(&ws, update_path, update_username, update_password);
     ws.begin();
@@ -556,13 +603,28 @@ void setup_webserver(void)
     httpServer.on("/reconfig", [&]() {
         Serial.println("fire up on demand config/ap thing");
     });
+    Serial.println("Finished plain webserver setup");
+}
 
+void setup_mqtt()
+{
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+    mqttClient.onMessage(onMqttMessage);
+    mqttClient.setServer(mqtt_host, String(mqtt_port).toInt());
+    mqttClient.setKeepAlive(60).setCleanSession(true);
+    mqttClient.setClientId(host.c_str());
+    String topic = "advent/" + host + "/w";
+    mqttClient.setWill(topic.c_str(), 1, true, "OFF", 0);
+    Serial.println("Connecting to MQTT...");
+    mqttClient.connect();
 }
 
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Booting Sketch...");
+    //strcpy(_host_c, host.c_str());
     // stable, and at least unique per device.
     randomSeed(id);
     strip.Begin();
@@ -585,6 +647,7 @@ void setup()
 
     setup_eus(httpServer);
     setup_ota(httpServer);
+    setup_mqtt();
 
     setup_webserver();
 
@@ -593,7 +656,69 @@ void setup()
     Serial.println("----setup-finished----");
 }
 
-int hoho;
+uint32_t last_minor, last_flicker;
+
+// Choose a random candle to "flicker"
+void setup_candle_set_flicker()
+{
+    int pixel = random(PixelCount);
+    RgbColor originalColor = strip.GetPixelColor(pixel);
+    // flame sparkle
+    RgbColor targetColor = RgbColor(128 + random(20), 128, 128);
+    AnimUpdateCallback animUpdate = [ = ](const AnimationParam & param){
+        // too many curves!
+        float progress = NeoEase::ExponentialIn(param.progress);
+        // use the curve value to apply to the animation
+        RgbColor updatedColor = RgbColor::LinearBlend(originalColor, targetColor, progress);
+        strip.SetPixelColor(pixel, updatedColor);
+    };
+    animations.StartAnimation(pixel, 200 + random(200), animUpdate);
+}
+
+void setup_candle_set()
+{
+    // setup some animations
+    for (uint16_t pixel = 0; pixel < PixelCount; pixel++) {
+        // swell candles up and down a little over ~1.5 seconds
+        // pick a random duration of the animation for this pixel
+        // since values are centiseconds, the range is 1 - 4 seconds
+        uint16_t time = random(800, 2000);
+
+        // each animation starts with the color that was present
+        RgbColor originalColor = strip.GetPixelColor(pixel);
+        // and ends with a random color
+        RgbColor targetColor = RgbColor(85 + random(20), 50 + random(20), 0);
+
+        // we must supply a function that will define the animation, in this example
+        // we are using "lambda expression" to define the function inline, which gives
+        // us an easy way to "capture" the originalColor and targetColor for the call back.
+        //
+        // this function will get called back when ever the animation needs to change
+        // the state of the pixel, it will provide a animation progress value
+        // from 0.0 (start of animation) to 1.0 (end of animation)
+        //
+        // we use this progress value to define how we want to animate in this case
+        // we call RgbColor::LinearBlend which will return a color blended between
+        // the values given, by the amount passed, hich is also a float value from 0.0-1.0.
+        // then we set the color.
+        //
+        // There is no need for the MyAnimationState struct as the compiler takes care
+        // of those details for us
+        AnimUpdateCallback animUpdate = [ = ](const AnimationParam & param){
+            // too many curves!
+            float progress = NeoEase::ExponentialInOut(param.progress);
+            // use the curve value to apply to the animation
+            RgbColor updatedColor = RgbColor::LinearBlend(originalColor, targetColor, progress);
+            strip.SetPixelColor(pixel, updatedColor);
+        };
+
+        // now use the animation properties we just calculated and start the animation
+        // which will continue to run and call the update function until it completes
+        animations.StartAnimation(pixel, time, animUpdate);
+    }
+}
+
+int animCount = 0;
 
 void loop()
 {
@@ -617,14 +742,15 @@ void loop()
     if (shouldSaveConfig) {
         shouldSaveConfig = false;
         Serial.println("Reached loop, need to save config!");
-        //        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
-        //        strcpy(mqtt_host, custom_mqtt_server.getValue());
-        //        strcpy(mqtt_port, custom_mqtt_port.getValue());
+        Serial.printf("MQ details: %s:%s\n", custom_mqtt_server.getValue(), custom_mqtt_port.getValue());
+        strcpy(mqtt_host, custom_mqtt_server.getValue());
+        strcpy(mqtt_port, custom_mqtt_port.getValue());
         save_config();
     }
 
 
     if (!ledDriver.active()) {
+#if 0
         if (animations.IsAnimating()) {
             // the normal loop just needs these two to run the active animations
             animations.UpdateAnimations();
@@ -634,6 +760,23 @@ void loop()
             //
             FadeInFadeOutRinseRepeat(0.15f); // 0.0 = black, 0.25 is normal, 0.5 is bright
         }
+#else
+        if (animations.IsAnimating()) {
+            // the normal loop just needs these two to run the active animations
+            animations.UpdateAnimations();
+            strip.Show();
+        } else {
+            Serial.println();
+            Serial.println("Setup Next Set...");
+            animCount++;
+            // example function that sets up some animations
+            if (animCount % 3 == 0) {
+                setup_candle_set_flicker();
+            } else {
+                setup_candle_set();
+            }
+        }
+#endif
     }
 }
 
