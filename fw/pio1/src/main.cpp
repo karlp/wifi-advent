@@ -53,6 +53,13 @@ WiFiManager_async wifiManager;
 Ticker ledDriver;
 Ticker mqttReconnectDriver;
 
+struct app_state {
+    bool updatesInProgress;
+    uint32_t lastReport_battery;
+};
+
+struct app_state state;
+
 struct ledBlinkerState {
     int count;
     Ticker *ticker;
@@ -294,6 +301,7 @@ void wifi_scan()
 
 void ota_onStart()
 {
+    state.updatesInProgress = true;
     mqttClient.disconnect();
     Serial.println("Starting Update");
     strip.ClearTo(RgbColor(0));
@@ -430,18 +438,23 @@ void onMqttConnect(bool sessionPresent)
 
 static void mqttReconnectHandler(void)
 {
+    Serial.println("MQTT: Attempting reconn");
     mqttClient.connect();
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
 {
     // FIXME - get a useful handler abstraction for blinking leds for status
-    Serial.printf("MQTT: disconn: %d\n", reason);
+    if (state.updatesInProgress) {
+        Serial.println("MQTT: disconn with update in progress, ignoring");
+        return;
+    }
+    Serial.printf("MQTT: (unexpected) disconn: %d\n", reason);
     ledBlinker.count = 10;
     ledBlinker.ticker = &ledDriver;
     ledDriver.attach_ms(100, tickLedBlinkerError, &ledBlinker);
     // hey, probably don'ty do this immediately!
-    mqttReconnectDriver.attach_ms(15000, mqttReconnectHandler);
+    mqttReconnectDriver.once_ms(15000, mqttReconnectHandler);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
@@ -746,6 +759,16 @@ void loop()
         strcpy(mqtt_host, custom_mqtt_server.getValue());
         strcpy(mqtt_port, custom_mqtt_port.getValue());
         save_config();
+    }
+
+    yield();
+    if (millis() - state.lastReport_battery > 15000) {
+        int batt = analogRead(A0);
+        Serial.printf("'Battery' adc = %d\n", batt);
+        String topicBase = "advent/" + host + "/s";
+        String tb = topicBase + "/batt";
+        mqttClient.publish(tb.c_str(), 0, false, String(batt).c_str());
+        state.lastReport_battery = millis();
     }
 
 
