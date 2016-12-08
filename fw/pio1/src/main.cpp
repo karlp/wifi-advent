@@ -478,12 +478,18 @@ void setup_ota(ESP8266WebServer &ws)
     httpUpdater.onProgress(ota_onProgress);
 
     // Use our ssid as our hostname too
-    //MDNS.begin(host.c_str());
 
     httpUpdater.setup(&ws, update_path, update_username, update_password);
     ws.begin();
 
-    //MDNS.addService("http", "tcp", 80);
+    bool mdnsok = MDNS.begin(host.c_str());
+    if (mdnsok) {
+        Serial.println("mdns began ok, registering service");
+        MDNS.addService("http", "tcp", 80);
+    } else {
+        Serial.println(">> MDNS begin failed!");
+    }
+
     Serial.printf("HTTPUpdateServer ready! Open http://%s.local%s in your browser and login with username '%s' and password '%s'\n", host.c_str(), update_path, update_username, update_password);
     Serial.println("(Local) IP address: ");
     Serial.println(WiFi.localIP());
@@ -532,7 +538,7 @@ void setup_webserver(void)
         if (!handleFileRead(httpServer.uri()))
             httpServer.send(404, "text/plain", "FileNotFound");
     });
-    httpServer.on("/advent", [&](){
+    httpServer.on("/advent", [&]() {
         File file = SPIFFS.open("/index.htm", "r");
         size_t sent = httpServer.streamFile(file, "text/html");
         file.close();
