@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Wifi Advent </title>
+    <title>Wifi Advent - Updates</title>
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -33,12 +33,12 @@
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Home</a></li>
-            <li><a href="updates.htm">Updates</a></li>
+            <li><a href="index.htm">Home</a></li>
+            <li class="active"><a href="#">Updates</a></li>
             <li><a href="config.htm">Config</a></li>
           </ul>
 	  <ul class="nav navbar-nav navbar-right">
-           <li><a href="about.htm"><span class="glyphicon glyphicon-user"></span>About</a></li>
+           <li><a href="#"><span class="glyphicon glyphicon-user"></span>About</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -46,14 +46,32 @@
 
     <div class="container">
 
-<div class="starter-template">
-        <h1>Wifi Advent</h1>
-        <p class="lead">Use this document as a way to quickly start any new project.<br> All you get is this text and a mostly barebones HTML document.</p>
+      <div class="starter-template">
+        <h1>Updates</h1>
+        <p class="lead">Firmware updates for this device.
+	<p>Eventually, this device will automatically update, and get more features, and it will be
+	awesome.  Until then, this page lets you manually upload new firmware and new files.  Please be careful!
+	</div>
+	<div class="page-header">
+		<h3>Firmware Update</h3>
+	<p>This is the normal update.  You should have a file "firmware.bin"
+		<form method='POST' action='/firmware' enctype='multipart/form-data'>
+                  <input type='file' name='update'>
+                  <input type='submit' value='Update'>
+               </form>
+	</div>
+	<div class="page-header">
+	<h3>Files update</h3>
+	<p>This doesn't need to happen as often, but sometimes.  You should have a file "spiffs.bin"
+		<form method='POST' action='/firmware_fs' enctype='multipart/form-data'>
+                  <input type='file' name='update'>
+                  <input type='submit' value='Update'>
+               </form>
+	</div>
       </div>
 
-	<p>Main page content here, led colour picker or list of shits?
-
     </div><!-- /.container -->
+
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>')</script>

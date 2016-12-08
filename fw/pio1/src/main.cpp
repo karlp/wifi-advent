@@ -11,6 +11,7 @@ extern "C" {
 #include "user_interface.h"
 }
 
+#include <GDBStub.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -39,7 +40,6 @@ String host = String("advent-" + String(id, HEX));
 const char* update_path = "/firmware";
 const char* update_username = "...";
 const char* update_password = "...";
-
 char mqtt_host[60] = "...";
 char mqtt_port[6] = "1883";
 WiFiManagerParameter custom_mqtt_server("server", "mqtt host", mqtt_host, sizeof (mqtt_host));
@@ -131,6 +131,7 @@ void setup_password(unsigned char *hash)
 // what is stored for state is specific to the need, in this case, the colors.
 // basically what ever you need inside the animation update function
 #if 0
+
 struct MyAnimationState {
     RgbColor StartingColor;
     RgbColor EndingColor;
@@ -407,22 +408,29 @@ int load_config()
     return 0;
 }
 
-int save_config()
+int saveJson(JsonObject &json)
 {
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& json = jsonBuffer.createObject();
-    json["mqtt_host"] = mqtt_host;
-    json["mqtt_port"] = mqtt_port;
-
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
         Serial.println("failed to open config file for writing");
         return -1;
     }
 
+    Serial.print("JS: saving: ");
     json.printTo(Serial);
     json.printTo(configFile);
     configFile.close();
+    return 0;
+}
+
+int save_config()
+{
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["mqtt_host"] = mqtt_host;
+    json["mqtt_port"] = mqtt_port;
+    saveJson(json);
+
     return 0;
 }
 
@@ -577,7 +585,7 @@ String getContentType(String filename)
 
 bool handleFileRead(String path)
 {
-    Serial.println("handleFileRead: " + path);
+    Serial.print("handleFileRead: " + path);
     if (path.endsWith("/")) path += "index.htm";
     String contentType = getContentType(path);
     String pathWithGz = path + ".gz";
@@ -587,8 +595,10 @@ bool handleFileRead(String path)
         File file = SPIFFS.open(path, "r");
         size_t sent = httpServer.streamFile(file, contentType);
         file.close();
+        Serial.println("->OK");
         return true;
     }
+    Serial.println("->FAIL");
     return false;
 }
 
@@ -613,8 +623,23 @@ void setup_webserver(void)
         ESP.restart();
 
     });
-    httpServer.on("/reconfig", [&]() {
-        Serial.println("fire up on demand config/ap thing");
+    httpServer.on("/j/config", HTTP_GET, [&]() {
+        Serial.println("Loading j/config");
+        File file = SPIFFS.open("/config.json", "r");
+        if (file.size() > 0) {
+            size_t sent = httpServer.streamFile(file, "application/json");
+        } else {
+            httpServer.send(200, "application/json", "{}");
+        }
+        file.close();
+        return true;
+    });
+    httpServer.on("/j/config", HTTP_POST, [&]() {
+        Serial.println("Loading json");
+        StaticJsonBuffer<200> newBuffer;
+        JsonObject& newjson = newBuffer.parseObject(httpServer.arg("plain"));
+        saveJson(newjson);
+        httpServer.send(200, "application/json", "{'msg': 'ok'}");
     });
     Serial.println("Finished plain webserver setup");
 }
@@ -672,6 +697,7 @@ void setup()
 uint32_t last_minor, last_flicker;
 
 // Choose a random candle to "flicker"
+
 void setup_candle_set_flicker()
 {
     int pixel = random(PixelCount);
@@ -685,7 +711,7 @@ void setup_candle_set_flicker()
         RgbColor updatedColor = RgbColor::LinearBlend(originalColor, targetColor, progress);
         strip.SetPixelColor(pixel, updatedColor);
     };
-    animations.StartAnimation(pixel, 200 + random(200), animUpdate);
+    animations.StartAnimation(pixel, 100 + random(100), animUpdate);
 }
 
 void setup_candle_set()
@@ -700,7 +726,13 @@ void setup_candle_set()
         // each animation starts with the color that was present
         RgbColor originalColor = strip.GetPixelColor(pixel);
         // and ends with a random color
-        RgbColor targetColor = RgbColor(85 + random(20), 50 + random(20), 0);
+        RgbColor targetColor;
+        if (random(100) > 97) {
+            targetColor = RgbColor(128 + random(20), 128, 128);
+        } else {
+            targetColor = RgbColor(200 + random(20), 70 + random(20), 0);
+        }
+         
 
         // we must supply a function that will define the animation, in this example
         // we are using "lambda expression" to define the function inline, which gives
@@ -736,7 +768,14 @@ int animCount = 0;
 void loop()
 {
     // handles both eus _and_ ota
+    uint32_t before;
+
+    //    before = ESP.getCycleCount();
     httpServer.handleClient();
+    //    Serial.printf("handle took: %d\n", ESP.getCycleCount() - before);
+    // pointless, will continually repoll after finished?
+
+    //    before = ESP.getCycleCount();
     bool eusv = wifiManager.loop();
     if (eusv) {
         Serial.printf("wifi loop finished!\n");
@@ -761,6 +800,7 @@ void loop()
         save_config();
     }
 
+    //    Serial.printf("eus shit took: %d\n", ESP.getCycleCount() - before);
     yield();
     if (millis() - state.lastReport_battery > 15000) {
         int batt = analogRead(A0);
@@ -786,10 +826,11 @@ void loop()
 #else
         if (animations.IsAnimating()) {
             // the normal loop just needs these two to run the active animations
+            before = ESP.getCycleCount();
             animations.UpdateAnimations();
             strip.Show();
+            //            Serial.printf("anim took: %d\n", ESP.getCycleCount() - before);
         } else {
-            Serial.println();
             Serial.println("Setup Next Set...");
             animCount++;
             // example function that sets up some animations
