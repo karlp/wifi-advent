@@ -56,6 +56,7 @@ Ticker mqttReconnectDriver;
 struct app_state {
     bool updatesInProgress;
     uint32_t lastReport_battery;
+    int mode;
 };
 
 struct app_state state;
@@ -401,6 +402,9 @@ int load_config()
         if (json.containsKey("mqtt_port")) {
             strcpy(mqtt_port, json["mqtt_port"]);
         }
+        if (json.containsKey("pattern")) {
+            state.mode = String(json["pattern"].asString()).toInt();
+        }
     } else {
         Serial.println("failed to load json config");
         return -3;
@@ -420,6 +424,7 @@ int saveJson(JsonObject &json)
     json.printTo(Serial);
     json.printTo(configFile);
     configFile.close();
+    load_config();
     return 0;
 }
 
@@ -430,7 +435,6 @@ int save_config()
     json["mqtt_host"] = mqtt_host;
     json["mqtt_port"] = mqtt_port;
     saveJson(json);
-
     return 0;
 }
 
@@ -624,7 +628,7 @@ void setup_webserver(void)
 
     });
     httpServer.on("/j/config", HTTP_GET, [&]() {
-        Serial.println("Loading j/config");
+        Serial.println("WEB: Loading j/config");
         File file = SPIFFS.open("/config.json", "r");
         if (file.size() > 0) {
             size_t sent = httpServer.streamFile(file, "application/json");
@@ -635,8 +639,8 @@ void setup_webserver(void)
         return true;
     });
     httpServer.on("/j/config", HTTP_POST, [&]() {
-        Serial.println("Loading json");
-        StaticJsonBuffer<200> newBuffer;
+        Serial.println("WEB: saving j/config");
+        DynamicJsonBuffer newBuffer;
         JsonObject& newjson = newBuffer.parseObject(httpServer.arg("plain"));
         saveJson(newjson);
         httpServer.send(200, "application/json", "{'msg': 'ok'}");
@@ -696,6 +700,39 @@ void setup()
 
 uint32_t last_minor, last_flicker;
 
+void setup_fade(struct app_state *st)
+{
+    // Fade upto a random color
+    // we use HslColor object as it allows us to easily pick a hue
+    // with the same saturation and luminance so the colors picked
+    // will have similiar overall brightness
+    RgbColor start = RgbColor(0, 0, 0);
+    RgbColor target = HslColor(random(360) / 360.0f, 1.0f, 0.25);
+    uint16_t time = random(800, 2000);
+
+    animations.StartAnimation(0, time, [ = ](const AnimationParam & param){
+        RgbColor updatedColor = RgbColor::LinearBlend(start, target, param.progress);
+        // apply the color to the strip
+        for (uint16_t pixel = 0; pixel < PixelCount; pixel++) {
+            strip.SetPixelColor(pixel, updatedColor);
+        }
+    });
+}
+
+void setup_roll(struct app_state *st)
+{
+    // Pick a random colour, and a few versions of it...
+    RgbColor col = HslColor(random(360) / 360.0f, 1.0f, 0.25);
+    strip.ClearTo(RgbColor(0));
+    strip.SetPixelColor(0, col);
+    uint16_t time = random(800, 2000);
+    animations.StartAnimation(0, time, [ = ](const AnimationParam & param){
+        if (int(param.progress * 1000) % 30 == 0) {
+            strip.RotateRight(1);
+        }
+    });
+}
+
 // Choose a random candle to "flicker"
 
 void setup_candle_set_flicker()
@@ -732,7 +769,7 @@ void setup_candle_set()
         } else {
             targetColor = RgbColor(200 + random(20), 70 + random(20), 0);
         }
-         
+
 
         // we must supply a function that will define the animation, in this example
         // we are using "lambda expression" to define the function inline, which gives
@@ -804,7 +841,7 @@ void loop()
     yield();
     if (millis() - state.lastReport_battery > 15000) {
         int batt = analogRead(A0);
-        Serial.printf("'Battery' adc = %d\n", batt);
+        Serial.printf("Battery adc = %d\n", batt);
         String topicBase = "advent/" + host + "/s";
         String tb = topicBase + "/batt";
         mqttClient.publish(tb.c_str(), 0, false, String(batt).c_str());
@@ -813,17 +850,6 @@ void loop()
 
 
     if (!ledDriver.active()) {
-#if 0
-        if (animations.IsAnimating()) {
-            // the normal loop just needs these two to run the active animations
-            animations.UpdateAnimations();
-            strip.Show();
-        } else {
-            // no animation runnning, start some
-            //
-            FadeInFadeOutRinseRepeat(0.15f); // 0.0 = black, 0.25 is normal, 0.5 is bright
-        }
-#else
         if (animations.IsAnimating()) {
             // the normal loop just needs these two to run the active animations
             before = ESP.getCycleCount();
@@ -831,16 +857,27 @@ void loop()
             strip.Show();
             //            Serial.printf("anim took: %d\n", ESP.getCycleCount() - before);
         } else {
-            Serial.println("Setup Next Set...");
-            animCount++;
-            // example function that sets up some animations
-            if (animCount % 3 == 0) {
-                setup_candle_set_flicker();
-            } else {
-                setup_candle_set();
+            Serial.printf("led: next set: %d\n", state.mode);
+            switch (state.mode) {
+            case 1:
+                setup_fade(&state);
+                break;
+            case 2:
+                setup_roll(&state);
+                break;
+            default:
+            case 0:
+                animCount++;
+                // example function that sets up some animations
+                if (animCount % 3 == 0) {
+                    setup_candle_set_flicker();
+                } else {
+                    setup_candle_set();
+                }
+                break;
+
             }
         }
-#endif
     }
 }
 
