@@ -28,7 +28,8 @@ const uint8_t PixelPin = 2; // make sure to set this to the correct pin, ignored
 // This is the pin we have wired up. (works with both nodemcu+arduino codebases)
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(PixelCount, PixelPin);
 
-NeoPixelAnimator animations(PixelCount, NEO_CENTISECONDS);
+//NeoPixelAnimator animations(PixelCount, NEO_CENTISECONDS);
+NeoPixelAnimator animations(PixelCount, NEO_MILLISECONDS);
 
 uint16_t effectState = 0; // general purpose variable used to store effect state
 
