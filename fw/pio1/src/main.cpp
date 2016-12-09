@@ -625,7 +625,7 @@ void setup_webserver(void)
         Serial.println("delete config and reboot?");
         // FIXME - delete any json config too?
         // We need to be storing saved led prefs too!
-        httpServer.send(200, "application/json", "{'msg': 'forget went ok'}");
+        httpServer.send(200, "application/json", R"({"msg": "forget went ok"})");
         system_restore();
         ESP.restart();
 
@@ -646,7 +646,7 @@ void setup_webserver(void)
         DynamicJsonBuffer newBuffer;
         JsonObject& newjson = newBuffer.parseObject(httpServer.arg("plain"));
         saveJson(newjson);
-        httpServer.send(200, "application/json", "{'msg': 'ok'}");
+        httpServer.send(200, "application/json", R"({"msg": "ok"})");
     });
     Serial.println("Finished plain webserver setup");
 }
