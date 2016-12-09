@@ -768,7 +768,8 @@ void setup_candle_set()
         if (random(100) > 97) {
             targetColor = RgbColor(128 + random(20), 128, 128);
         } else {
-            targetColor = RgbColor(200 + random(20), 70 + random(20), 0);
+            //targetColor = RgbColor(234 + random(20), 90 + random(20), 0);
+            targetColor = HslColor(random(25) / 360.0f, 1.0, (35 + random(20)) / 100.0f);
         }
 
 
