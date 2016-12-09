@@ -36,6 +36,9 @@ uint16_t effectState = 0; // general purpose variable used to store effect state
 // Nasty globals!
 int id = ESP.getChipId();
 String host = String("advent-" + String(id, HEX));
+// isn't copied!
+String mqttWillTopic = "advent/" + host + "/w";
+
 //char _host_c[40];
 
 const char* update_path = "/firmware";
@@ -445,8 +448,7 @@ void onMqttConnect(bool sessionPresent)
     mqttReconnectDriver.detach();
     String t = "advent/" + host + "/c";
     uint16_t packetIdSub = mqttClient.subscribe(t.c_str(), 0);
-    t = "advent/" + host + "/w";
-    mqttClient.publish(t.c_str(), 0, false, "ON");
+    mqttClient.publish(mqttWillTopic.c_str(), 0, false, "ON");
 }
 
 static void mqttReconnectHandler(void)
@@ -657,8 +659,7 @@ void setup_mqtt()
     mqttClient.setServer(mqtt_host, String(mqtt_port).toInt());
     mqttClient.setKeepAlive(60).setCleanSession(true);
     mqttClient.setClientId(host.c_str());
-    String topic = "advent/" + host + "/w";
-    mqttClient.setWill(topic.c_str(), 1, true, "OFF", 0);
+    mqttClient.setWill(mqttWillTopic.c_str(), 1, true, "OFF");
     Serial.println("Connecting to MQTT...");
     mqttClient.connect();
 }
