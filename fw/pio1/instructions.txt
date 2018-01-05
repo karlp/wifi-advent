@@ -1,0 +1,25 @@
+
+Plug in to USB / put in a battery.
+The battery I included aren't great, but they last for a couple of hours.
+They will recharge from USB.  There's a red/green light on the front that
+is green when they're fully charged, and red when they're charging.
+
+When it's powered up, it will scroll some green lights a bit, and then
+you will get a wifi hotspot active.  You can ignore this completely and
+just leave it, the default light pattern will work ok.
+
+If you connect to the wifi hotspot (ssid and password on sticker) you can choose
+to connect it your home wifi. (Top option)
+
+Once that's done, you should be able to visit http://<ssid>.local and get a
+bit more menu.
+
+The software's nowhere near finished unfortunately.  On the "config" page, you
+can choose three led patterns:
+
+0: the default, reddish candley
+1: fast random scrolling
+2: random fade in
+
+The "Updates" page is where one day you'll get a firmware update that will let you
+have a lot more control over the lights, and be able to send messages to the other lights. 
